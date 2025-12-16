@@ -1,0 +1,101 @@
+/* 水平间距 */
+/* 水平间距 */
+.container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 30rpx;
+}
+
+/* 通用卡片样式 */
+.company-card,
+.balance-card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+}
+
+/* 公司信息卡片 */
+.company-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 16rpx;
+}
+.company-id {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+/* 功能网格 */
+.function-grid {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30rpx;
+}
+.grid-item {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 40rpx 0;
+  margin-right: 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+}
+.grid-item:last-child {
+  margin-right: 0;
+}
+.icon-wrapper {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+.blue-bg {
+  background-color: #e6f1ff;
+}
+.green-bg {
+  background-color: #e6ffef;
+}
+.orange-bg {
+  background-color: #fff7e6;
+}
+.icon {
+  font-size: 40rpx;
+}
+.grid-text {
+  font-size: 26rpx;
+  color: #666666;
+}
+
+/* 余额卡片 */
+.balance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+.balance-label {
+  font-size: 30rpx;
+  color: #666666;
+}
+.recharge-btn {
+  background-color: #e6f1ff;
+  padding: 8rpx 24rpx;
+  border-radius: 30rpx;
+  color: #007aff;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.balance-amount {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333333;
+}
