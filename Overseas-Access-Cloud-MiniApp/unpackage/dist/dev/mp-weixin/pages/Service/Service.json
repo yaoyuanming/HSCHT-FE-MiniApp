@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "服务",
-  "usingComponents": {
-    "home-service": "../Home/Component/Home_Service",
-    "uni-popup": "../../uni_modules/uni-popup/components/uni-popup/uni-popup"
-  }
-}
