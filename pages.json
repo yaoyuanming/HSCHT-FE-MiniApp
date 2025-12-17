@@ -1,0 +1,92 @@
+{
+	"pages": [{
+		"path" : "pages/Home/Home",
+		"style" : 
+		{
+		    "navigationStyle": "custom"
+		}
+	},
+	{
+		"path" : "pages/Service/Service",
+		"style" : 
+		{
+			"navigationBarTitleText" : "服务"
+		}
+	},
+	{
+		"path" : "pages/Service/funtion/detail",
+		"style" : 
+		{
+			"navigationBarTitleText" : "服务详情"
+		}
+	},
+	{
+		"path" : "pages/Course/Course",
+		"style" : 
+		{
+			"navigationStyle": "custom"
+		}
+	},
+	{
+		"path" : "pages/Guide/Guide",
+		"style" : 
+		{
+			"navigationStyle": "custom",
+			"navigationBarTitleText" : "指南"
+		}
+	},
+	{
+		"path" : "pages/My/My",
+		"style" : 
+		{
+			"navigationBarTitleText" : "我的"
+		}
+	}],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+			"background": "#efeff4"
+		}
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#1296db",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/Home/Home",
+				"iconPath": "/static/nav/首页.png",
+				"selectedIconPath": "/static/nav/首页 (1).png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/Service/Service",
+				"iconPath": "/static/nav/服务.png",
+				"selectedIconPath": "/static/nav/服务 (1).png",
+				"text": "服务"
+			},
+			{
+				"pagePath": "pages/Course/Course",
+				"iconPath": "/static/nav/课程.png",
+				"selectedIconPath": "/static/nav/课程 (1).png",
+				"text": "课程"
+			},
+			{
+				"pagePath": "pages/Guide/Guide",
+				"iconPath": "/static/nav/指南.png",
+				"selectedIconPath": "/static/nav/指南 (1).png",
+				"text": "指南"
+			},
+			{
+				"pagePath": "pages/My/My",
+				"iconPath": "/static/nav/我的 (2).png",
+				"selectedIconPath": "/static/nav/我的 (3).png",
+				"text": "我的"
+			}
+		]
+	}
+}
