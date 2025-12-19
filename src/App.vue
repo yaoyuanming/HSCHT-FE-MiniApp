@@ -15,6 +15,8 @@
 
 <style lang="scss">
 	/*每个页面公共css */
+	@import "uview-plus/index.scss";
+	@import "uview-plus/theme.scss";
 	@import '@/uni_modules/uni-scss/index.scss';
 	/* #ifndef APP-NVUE */
 	@import '@/static/customicons.css';

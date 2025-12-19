@@ -1,5 +1,5 @@
 <template>
-	<view class="container">
+	<view class="course-page">
 		<!-- 自定义导航栏 -->
 		<view class="custom-nav-bar">
 			<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
@@ -15,156 +15,185 @@
 			</view>
 		</view>
 
-		<!-- 顶部Tab栏 -->
-		<view class="tab-header" :style="{ top: (statusBarHeight + 44) + 'px' }">
-			<scroll-view scroll-x="true" class="tab-scroll" :show-scrollbar="false">
-				<view class="tab-content">
-					<view class="tab-item" 
-						v-for="(item, index) in tabs" 
-						:key="index" 
-						:class="{ active: currentTab === index }"
-						@click="switchTab(index)">
-						<text class="tab-text">{{ item }}</text>
-					</view>
-				</view>
-			</scroll-view>
-		</view>
-		
-		<!-- 占位符，防止内容被Tab遮挡 -->
-		<view class="content-placeholder" :style="{ height: (statusBarHeight + 44 + 50) + 'px' }"></view>
+		<!-- 占位符，防止内容被导航遮挡 -->
+		<view class="content-placeholder" :style="{ height: (statusBarHeight + 44) + 'px' }"></view>
 
-		<!-- 课程列表 -->
 		<view class="course-list">
-			<view class="course-card" v-for="(item, index) in courseList" :key="index">
-				<view class="card-img-box">
-					<image class="card-img" :src="item.image" mode="aspectFill"></image>
-				</view>
-				<view class="card-content">
-					<view class="card-tag-row">
-						<text class="card-tag" :style="{ color: item.tagColor, backgroundColor: item.tagBg }">{{ item.tag }}</text>
-					</view>
-					<text class="card-title">{{ item.title }}</text>
-					<text class="card-desc">{{ item.desc }}</text>
-					<view class="card-stats">
-						<uni-icons type="person" size="14" color="#999999"></uni-icons>
-						<text class="stats-text">{{ item.students }}人学习</text>
-					</view>
-					<view class="card-footer">
-						<text class="price">¥{{ item.price }}</text>
-						<button class="signup-btn">立即报名</button>
+			<!-- 骨架屏：首次加载时显示 -->
+			<view v-if="loading && courses.length === 0 && isFirstLoad" class="skeleton-list">
+				<view v-for="i in 3" :key="i" class="skeleton-card">
+					<view class="skeleton-media"></view>
+					<view class="skeleton-body">
+						<view class="skeleton-title"></view>
+						<view class="skeleton-meta">
+							<view class="skeleton-tag"></view>
+							<view class="skeleton-price"></view>
+						</view>
 					</view>
 				</view>
+			</view>
+			
+			<!-- 内容列表 -->
+			<template v-else>
+				<view v-for="course in courses" :key="course.id" class="course-card">
+					<view class="media-box" @click="goDetail(course)">
+						<image :src="course.photoUrl || defaultCover" mode="aspectFill" class="course-cover" />
+					</view>
+					<view class="card-body">
+						<view class="info-row">
+							<view class="info-left">
+								<text class="course-title">{{ course.courseName || '未命名课程' }}</text>
+								<view class="type-price">
+									<text class="course-type">{{ courseTypeText(course.courseType) }}</text>
+									<text class="course-price" :class="{ 'free': course.paymentMethod === 1 }">
+										{{ priceLabel(course) }}
+									</text>
+								</view>
+							</view>
+							<view class="info-right">
+								<text class="course-count">课程人数: {{ participantsLabel(course) }}</text>
+								<button class="enroll-btn" @click.stop="goDetail(course)">
+									{{ course.enrolled ? '已报名' : '报名' }}
+								</button>
+							</view>
+						</view>
+					</view>
+				</view>
+			</template>
+			
+			<!-- 空状态 -->
+			<view v-if="!courses.length && !loading && !isFirstLoad" class="empty-state">
+				<text>暂无课程，敬请期待</text>
 			</view>
 		</view>
-
-		<!-- 分页器 -->
-		<view class="pagination">
-			<view class="page-btn prev">
-				<uni-icons type="left" size="14" color="#666666"></uni-icons>
-			</view>
-			<view class="page-btn active">1</view>
-			<view class="page-btn">2</view>
-			<view class="page-btn">3</view>
-			<view class="page-btn">4</view>
-			<view class="page-btn">5</view>
-			<view class="page-btn next">
-				<uni-icons type="right" size="14" color="#666666"></uni-icons>
-			</view>
+		<view class="load-footer">
+			<text v-if="loading && courses.length > 0">加载中...</text>
 		</view>
 	</view>
 </template>
 
-<script>
-	export default {
-		data() {
+<script setup>
+	import { ref } from 'vue'
+	import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+
+	const defaultCover = '/static/index/video.png'
+	const statusBarHeight = ref(20)
+	const courses = ref([])
+	const loading = ref(false)
+	const finished = ref(false)
+	const loadLock = ref(false)
+	const isFirstLoad = ref(true)
+	const pager = ref({
+		pageNum: 1,
+		pageSize: 10
+	})
+
+	const mockCourses = (pageNum, pageSize) => {
+		const base = (pageNum - 1) * pageSize
+		return Array.from({ length: pageSize }).map((_, idx) => {
+			const i = base + idx + 1
 			return {
-				statusBarHeight: 20, // 默认值
-				currentTab: 0,
-				tabs: ['全部课程', '跨境电商', '海外营销', '外贸合规', '融资财税', '物流仓储'],
-				courseList: [
-					{
-						image: '/static/Country/china.jpg',
-						tag: '国际贸易',
-						tagColor: '#1e90ff',
-						tagBg: '#e6f7ff',
-						title: '进阶必修八门必修课：跨境电商运营',
-						desc: '跨境电商运营全流程解析',
-						students: '1.2k',
-						price: '免费'
-					},
-					{
-						image: '/static/Country/china.jpg',
-						tag: '平台运营',
-						tagColor: '#9c27b0',
-						tagBg: '#f3e5f5',
-						title: '亚马逊全球开店实战：从注册到...',
-						desc: '新手卖家快速入门指南',
-						students: '865',
-						price: '免费'
-					},
-					{
-						image: '/static/Country/china.jpg',
-						tag: '数字营销',
-						tagColor: '#009688',
-						tagBg: '#e0f2f1',
-						title: '海外独立站引流策略：Google与...',
-						desc: 'Facebook广告投放技巧',
-						students: '2.5k',
-						price: '459'
-					},
-					{
-						image: '/static/Country/china.jpg',
-						tag: '物流运输',
-						tagColor: '#2196f3',
-						tagBg: '#e3f2fd',
-						title: '国际物流与供应链管理：海运空运...',
-						desc: '降低物流成本的实战技巧',
-						students: '980',
-						price: '329'
-					},
-					{
-						image: '/static/Country/china.jpg',
-						tag: '法律法规',
-						tagColor: '#ff5722',
-						tagBg: '#fbe9e7',
-						title: '跨境电商法律合规：知识产权与税...',
-						desc: '规避出海风险的必修课',
-						students: '750',
-						price: '279'
-					},
-					{
-						image: '/static/Country/china.jpg',
-						tag: '语言学习',
-						tagColor: '#673ab7',
-						tagBg: '#ede7f6',
-						title: '商务英语实战：商务谈判与邮件写...',
-						desc: '提升跨文化沟通能力',
-						students: '1.5k',
-						price: '199'
-					}
-				]
+				id: String(i),
+				courseName: `示例课程 ${i}`,
+				courseType: i % 2 === 0 ? 2 : 1,
+				paymentMethod: 1,
+				price: 0,
+				photoUrl: '',
+				enrolled: i % 5 === 0,
+				enrolledParticipants: Math.floor(Math.random() * 200),
+				maxParticipants: i % 3 === 0 ? 200 : null
 			}
-		},
-		onLoad() {
-			const sysInfo = uni.getSystemInfoSync();
-			this.statusBarHeight = sysInfo.statusBarHeight;
-		},
-		methods: {
-			switchTab(index) {
-				this.currentTab = index;
+		})
+	}
+
+	const courseTypeText = (type) => {
+		if (type === 1) return '线下'
+		if (type === 2) return '线上'
+		return '未知类型'
+	}
+
+	const participantsLabel = (course) => {
+		if (course.maxParticipants) {
+			return `${course.enrolledParticipants || 0}/${course.maxParticipants}`
+		}
+		return course.enrolledParticipants || 0
+	}
+
+	const priceLabel = (course) => {
+		if (course.paymentMethod === 1) return '免费'
+		return course.price ? `¥ ${Number(course.price).toFixed(2)}` : '¥ --'
+	}
+
+	const goDetail = (course) => {
+		if (!course?.id) return
+		uni.navigateTo({
+			url: `/pages/Course/detail?id=${course.id}`
+		})
+	}
+
+	const updatePagerAfterLoad = (listLength) => {
+		if (listLength < pager.value.pageSize) {
+			finished.value = true
+			return
+		}
+		pager.value.pageNum += 1
+	}
+
+	const loadCourses = async (reset = false, silent = false) => {
+		if (loadLock.value || (finished.value && !reset)) return
+		loadLock.value = true
+
+		if (reset && isFirstLoad.value && !silent) {
+			loading.value = true
+		} else if (!silent && !reset) {
+			loading.value = true
+		} else {
+			loading.value = false
+		}
+
+		try {
+			if (reset) {
+				pager.value.pageNum = 1
+				finished.value = false
+				isFirstLoad.value = false
 			}
+
+			await new Promise((r) => setTimeout(r, 600))
+			const list = mockCourses(pager.value.pageNum, pager.value.pageSize)
+			courses.value = reset ? list : [...courses.value, ...list]
+			updatePagerAfterLoad(list.length)
+		} finally {
+			loading.value = false
+			loadLock.value = false
 		}
 	}
+
+	onLoad(() => {
+		const sysInfo = uni.getSystemInfoSync()
+		statusBarHeight.value = sysInfo.statusBarHeight || 20
+	})
+
+	onShow(async () => {
+		await loadCourses(true)
+	})
+
+	onPullDownRefresh(async () => {
+		await loadCourses(true, true)
+		uni.stopPullDownRefresh()
+	})
+
+	onReachBottom(async () => {
+		await loadCourses()
+	})
 </script>
 
-<style lang="scss">
-	.container {
-		background-color: #f8f8f8;
+<style scoped lang="scss">
+	.course-page {
 		min-height: 100vh;
-		padding-bottom: 30rpx;
+		background: #f5f6fa;
+		padding-bottom: 24rpx;
 	}
 
-	/* Tab Header */
 	.custom-nav-bar {
 		position: fixed;
 		top: 0;
@@ -203,193 +232,204 @@
 		margin-left: 30rpx;
 	}
 
-	.tab-header {
-		background-color: #ffffff;
-		padding: 20rpx 0;
-		position: fixed;
+	.content-placeholder {
 		width: 100%;
-		z-index: 100;
 	}
 
-	.tab-scroll {
-		width: 100%;
-		white-space: nowrap;
-	}
-
-	.tab-content {
-		display: flex;
-		padding: 0 20rpx;
-	}
-
-	.tab-item {
-		padding: 20rpx 25rpx;
-		background-color: #f5f5f5;
-		border-radius: 50rpx;
-		gap:10px;
-		margin-right: 20rpx;
-		font-size: 28rpx;
-		color: #666666;
-		transition: all 0.3s;
-		/* 垂直文本布局 - 双字换行 */
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1.4;
-		text-align: center;
-		flex-shrink: 0; /* 防止挤压 */
-	}
-
-	.tab-text {
-		/* 移除之前的垂直排版样式 */
-	}
-
-	.tab-item.active {
-		background-color: #e6f7ff;
-		color: #1e90ff;
-		font-weight: bold;
-	}
-
-	/* Course List */
 	.course-list {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		padding: 20rpx;
+		padding: 24rpx;
 	}
 
 	.course-card {
-		width: 48%; /* 两列布局 */
-		background-color: #ffffff;
-		border-radius: 16rpx;
+		background-color: #fff;
+		border-radius: 24rpx;
+		margin-bottom: 28rpx;
+		box-shadow: 0 16rpx 32rpx rgba(11, 25, 72, 0.12);
+		border: none;
+		position: relative;
 		overflow: hidden;
-		margin-bottom: 24rpx;
-		box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
-		display: flex;
-		flex-direction: column;
+		transform: translateZ(0);
 	}
 
-	.card-img-box {
+	.media-box {
+		position: relative;
+		overflow: hidden;
 		width: 100%;
-		height: 200rpx;
+		padding-bottom: 42.86%;
+		border-radius: 24rpx 24rpx 0 0;
 	}
 
-	.card-img {
+	.course-cover {
+		position: absolute;
+		top: 0;
+		left: 0;
 		width: 100%;
 		height: 100%;
+		display: block;
+		object-fit: cover;
 	}
 
-	.card-content {
-		padding: 20rpx;
-		flex: 1;
+	.card-body {
+		padding: 24rpx;
+		border: none;
+	}
+
+	.info-row {
 		display: flex;
-		flex-direction: column;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0;
+		gap: 24rpx;
 	}
 
-	.card-tag-row {
-		margin-bottom: 12rpx;
-	}
-
-	.card-tag {
-		font-size: 20rpx;
-		padding: 4rpx 12rpx;
-		border-radius: 8rpx;
-		display: inline-block;
-	}
-
-	.card-title {
-		font-size: 28rpx;
-		font-weight: bold;
-		color: #333333;
+	.course-title {
+		font-size: 30rpx;
+		color: #111827;
+		font-weight: 600;
 		line-height: 1.4;
-		margin-bottom: 10rpx;
-		/* 限制两行 */
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		overflow: hidden;
-		height: 80rpx; /* 固定高度保持对齐 */
-	}
-
-	.card-desc {
-		font-size: 22rpx;
-		color: #999999;
-		margin-bottom: 16rpx;
+		max-width: 360rpx;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.card-stats {
+	.type-price {
 		display: flex;
 		align-items: center;
-		margin-bottom: 20rpx;
+		gap: 20rpx;
 	}
 
-	.stats-text {
+	.course-type {
 		font-size: 22rpx;
-		color: #999999;
-		margin-left: 8rpx;
+		color: #2563eb;
+		padding: 4rpx 14rpx;
+		border-radius: 999rpx;
+		background: rgba(37, 99, 235, 0.06);
 	}
 
-	.card-footer {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-top: auto; /* 推到底部 */
-	}
-
-	.price {
-		font-size: 32rpx;
-		font-weight: bold;
-		color: #333333;
-	}
-
-	.signup-btn {
-		margin: 0;
-		padding: 0 20rpx;
-		height: 50rpx;
-		line-height: 50rpx;
-		font-size: 22rpx;
-		background-color: #1e90ff;
-		color: #ffffff;
-		border-radius: 25rpx;
-		border: none;
-	}
-
-	.signup-btn:after {
-		border: none;
-	}
-
-	/* Pagination */
-	.pagination {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: 40rpx 0;
-	}
-
-	.page-btn {
-		width: 70rpx;
-		height: 70rpx;
-		background-color: #f5f7fa;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 0 10rpx;
+	.course-price {
 		font-size: 28rpx;
-		color: #606266;
-		transition: all 0.3s;
+		color: #e11d48;
+		font-weight: 600;
 	}
 
-	.page-btn.active {
-		background-color: #1e90ff;
-		color: #ffffff;
-		font-weight: bold;
-		box-shadow: 0 4rpx 12rpx rgba(30, 144, 255, 0.3);
+	.course-price.free {
+		color: #ff4d4f;
 	}
 
-	.page-btn.prev, .page-btn.next {
-		background-color: #f5f7fa;
+	.info-right {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 20rpx;
+	}
+
+	.course-count {
+		font-size: 24rpx;
+		color: #808080;
+		white-space: nowrap;
+	}
+
+	.enroll-btn {
+		position: static;
+		width: 100rpx;
+		height: 56rpx;
+		border-radius: 40rpx;
+		background: #5278FF;
+		color: #fff;
+		font-size: 26rpx;
+		border: none;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 20rpx 24rpx;
+		gap: 20rpx;
+		margin: 0;
+		line-height: 1;
+		white-space: nowrap;
+		box-shadow: 0 8rpx 18rpx rgba(82, 120, 255, 0.25);
+		z-index: 1;
+	}
+
+	.empty-state {
+		padding: 120rpx 0;
+		text-align: center;
+		color: #b0b0c3;
+	}
+
+	.load-footer {
+		text-align: center;
+		color: #8c8c9b;
+		font-size: 24rpx;
+		padding-bottom: 30rpx;
+	}
+
+	/* 骨架屏样式 */
+	.skeleton-list {
+		padding: 24rpx;
+	}
+
+	.skeleton-card {
+		background: #ffffff;
+		border-radius: 20rpx;
+		margin-bottom: 24rpx;
+		box-shadow: 0 12rpx 30rpx rgba(15, 35, 95, 0.06);
+		overflow: hidden;
+	}
+
+	.skeleton-media {
+		width: 100%;
+		padding-bottom: 42.86%;
+		background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+		background-size: 200% 100%;
+		animation: skeleton-loading 1.5s ease-in-out infinite;
+	}
+
+	.skeleton-body {
+		padding: 18rpx 4rpx 20rpx;
+	}
+
+	.skeleton-title {
+		height: 30rpx;
+		width: 60%;
+		background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+		background-size: 200% 100%;
+		border-radius: 6rpx;
+		margin-bottom: 16rpx;
+		animation: skeleton-loading 1.5s ease-in-out infinite;
+	}
+
+	.skeleton-meta {
+		display: flex;
+		align-items: center;
+		gap: 20rpx;
+	}
+
+	.skeleton-tag {
+		height: 30rpx;
+		width: 80rpx;
+		background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+		background-size: 200% 100%;
+		border-radius: 999rpx;
+		animation: skeleton-loading 1.5s ease-in-out infinite;
+	}
+
+	.skeleton-price {
+		height: 28rpx;
+		width: 120rpx;
+		background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+		background-size: 200% 100%;
+		border-radius: 6rpx;
+		animation: skeleton-loading 1.5s ease-in-out infinite;
+	}
+
+	@keyframes skeleton-loading {
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
 	}
 </style>
