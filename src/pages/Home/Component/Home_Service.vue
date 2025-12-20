@@ -10,17 +10,10 @@
 
 		<!-- 区域Tab -->
 		<view class="region-tabs">
-			<view class="tab-item" :class="{ active: currentTab === 0 }" @click="selectTab(0)">
-				<view class="tab-dot" :class="{ 'active-dot': currentTab === 0 }"></view>
-				<text class="tab-text">美国</text>
-			</view>
-			<view class="tab-item" :class="{ active: currentTab === 1 }" @click="selectTab(1)">
-				<view class="tab-dot" :class="{ 'active-dot': currentTab === 1 }"></view>
-				<text class="tab-text">欧洲</text>
-			</view>
-			<view class="tab-item" :class="{ active: currentTab === 2 }" @click="selectTab(2)">
-				<view class="tab-dot" :class="{ 'active-dot': currentTab === 2 }"></view>
-				<text class="tab-text">东南亚</text>
+			<view class="tab-item" :class="{ active: currentTab === index }" v-for="(item, index) in continents"
+				:key="index" @click="selectTab(index)">
+				<view class="tab-dot" :class="{ 'active-dot': currentTab === index }"></view>
+				<text class="tab-text">{{ item }}</text>
 			</view>
 		</view>
 
@@ -28,19 +21,19 @@
 		<view class="service-grid">
 			<view class="service-item" v-for="(item, index) in services" :key="index" @click="selectService(index)">
 				<view class="icon-box" :class="{ 'active-icon': currentService === index }">
-					<!-- 使用 uni-icons 作为示意，实际项目中可替换为 image -->
-					<uni-icons :type="item.icon" size="30" :color="currentService === index ? '#ffffff' : '#666666'"></uni-icons>
+					<image class="service-icon" :src="item.iconUrl" mode="aspectFit" v-if="item.iconUrl"></image>
+					<uni-icons type="help" size="30" color="#666666" v-else></uni-icons>
 				</view>
-				<text class="service-name">{{ item.name }}</text>
+				<text class="service-name">{{ item.typeName }}</text>
 			</view>
 		</view>
 
 		<!-- 底部详情列表 (使用scroll-view) -->
 		<scroll-view scroll-y="true" class="detail-list-scroll">
 			<view class="detail-list" v-if="currentService !== -1">
-				<view class="detail-item" v-for="(item, index) in 1" :key="index" @click="goToDetail">
-					<image class="detail-img" src="/static/Country/china.jpg" mode="aspectFill"></image>
-					<text class="detail-title">{{ services[currentService].name }} - 详情 {{ index + 1 }}</text>
+				<view class="detail-item" v-for="(item, index) in articles" :key="index" @click="goToDetail(item)">
+					<image class="detail-img" :src="item.articleImageUrl" mode="aspectFill"></image>
+					<text class="detail-title">{{ item.articleName }}</text>
 				</view>
 			</view>
 		</scroll-view>
@@ -49,28 +42,125 @@
 
 <script>
 	import UniIcons from '@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue'
+	import {
+		getServiceTypeList,
+		getServiceArticleList
+	} from '@/api/service.js'
 
 	export default {
 		components: {
 			UniIcons
 		},
+		props: {
+			initialCountry: {
+				type: Object,
+				default: () => ({})
+			},
+			allCountries: {
+				type: Array,
+				default: () => []
+			}
+		},
 		data() {
 			return {
 				currentTab: 0,
-				currentService: 1, // 默认选中第二个 "投资架构设计"
-				services: [
-					{ name: '境外投资备案', icon: 'paperclip' },
-					{ name: '投资架构设计', icon: 'map' }, // 替换为 map 图标
-					{ name: '公司注册', icon: 'shop' },
-					{ name: '法律服务', icon: 'info' }, // 类似天平
-					{ name: '知识产权', icon: 'circle' }, // R标
-					{ name: '财务服务', icon: 'staff-filled' },
-					{ name: '人事服务', icon: 'person' },
-					{ name: '公证认证', icon: 'checkbox-filled' }
-				]
+				currentService: 0,
+				services: [],
+				articles: [],
+				continents: ['亚洲', '欧洲', '非洲', '北美洲', '南美洲', '大洋洲', '南极洲']
+			}
+		},
+		watch: {
+			allCountries: {
+				handler(newVal) {
+					// this.updateContinents()
+				},
+				immediate: true
+			},
+			initialCountry: {
+				handler(newVal) {
+					this.initDataByCountry(newVal)
+				},
+				immediate: true,
+				deep: true
+			}
+		},
+		mounted() {
+			// 如果有初始国家，watch 会处理；如果没有，可以加载默认数据
+			if (!this.initialCountry || !this.initialCountry.id) {
+				this.fetchServiceTypes()
 			}
 		},
 		methods: {
+			/**
+			 * 基于ID关联的多级数据筛选方法
+			 * 输入：国家对象 (包含 id, continent)
+			 * 逻辑：
+			 * 1. 确定所属洲 -> 切换Tab
+			 * 2. 筛选服务类型 -> fetchServiceTypes({ countryId })
+			 * 3. 筛选文章 -> selectService(0) -> fetchArticles({ servicesTypeId })
+			 */
+			initDataByCountry(country) {
+				if (!country || !country.id) return
+				
+				// 1. 根据 country.continent 自动确定所属洲
+				if (country.continent) {
+					// 尝试匹配，处理可能存在的空格
+					const continentName = country.continent.trim()
+					const index = this.continents.indexOf(continentName)
+					if (index !== -1) {
+						this.currentTab = index
+					}
+				}
+				
+				// 2. 根据 countryId 筛选服务类型
+				this.fetchServiceTypes({
+					countryId: country.id
+				})
+			},
+			updateContinents() {
+				// if (this.allCountries && this.allCountries.length > 0) {
+				// 	// 提取所有不重复的 continent
+				// 	const continentSet = new Set()
+				// 	this.allCountries.forEach(country => {
+				// 		if (country.continent) {
+				// 			continentSet.add(country.continent)
+				// 		}
+				// 	})
+				// 	this.continents = Array.from(continentSet)
+				// }
+			},
+			async fetchServiceTypes(params = {}) {
+				try {
+					// 重置选中状态
+					this.currentService = 0
+					this.services = []
+					this.articles = []
+					
+					const res = await getServiceTypeList(params)
+					this.services = res.data?.rows || res.rows || res.data || []
+					
+					// 3. 默认选中第一个服务类型，触发文章筛选
+					if (this.services.length > 0) {
+						this.selectService(0)
+					}
+				} catch (e) {
+					console.error('获取服务类型失败', e)
+				}
+			},
+			async fetchArticles(params = {}) {
+				try {
+					uni.showLoading({
+						title: '加载中...'
+					})
+					const res = await getServiceArticleList(params)
+					this.articles = res.data?.rows || res.rows || res.data || []
+				} catch (e) {
+					console.error('获取文章列表失败', e)
+				} finally {
+					uni.hideLoading()
+				}
+			},
 			close() {
 				this.$emit('close');
 			},
@@ -79,10 +169,31 @@
 			},
 			selectService(index) {
 				this.currentService = index;
+				const service = this.services[index];
+				// console.log('Selected service:', service)
+				if (service) {
+					// 尝试获取 ID，优先 serviceTypeId，其次 id
+					const id = service.serviceTypeId || service.id || service.typeId
+					// console.log('Using Type ID:', id)
+					
+					if (!id) {
+						console.warn('未找到服务类型ID', service)
+						return
+					}
+
+					// 先清空列表，给予视觉反馈
+					this.articles = []
+					
+					// 使用 servicesTypeId 作为参数名，并再次确认
+					console.log('Fetching articles for servicesTypeId:', id)
+					this.fetchArticles({
+						servicesTypeId: id
+					})
+				}
 			},
-			goToDetail() {
+			goToDetail(item) {
 				uni.navigateTo({
-					url: '/pages/Service/funtion/detail'
+					url: `/pages/Service/funtion/detail?id=${item.id}`
 				});
 			}
 		}
@@ -96,7 +207,7 @@
 		border-top-right-radius: 24rpx;
 		overflow: hidden;
 		/* 固定高度，使用 flex 布局 */
-		height: 80vh; 
+		height: 80vh;
 		display: flex;
 		flex-direction: column;
 		/* 移除之前的 padding-bottom，因为 scroll-view 内部处理 */
@@ -130,6 +241,8 @@
 		display: flex;
 		background-color: #f5f5f5;
 		padding: 20rpx 30rpx;
+		overflow-x: auto; /* 允许横向滚动 */
+		white-space: nowrap;
 	}
 
 	.tab-item {
@@ -139,11 +252,12 @@
 		border-radius: 30rpx;
 		margin-right: 20rpx;
 		transition: all 0.3s;
+		flex-shrink: 0;
 	}
 
 	.tab-item.active {
 		background-color: #ffffff;
-		box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 	}
 
 	.tab-dot {
@@ -155,7 +269,8 @@
 	}
 
 	.tab-dot.active-dot {
-		background-color: #1e90ff; /* 选中时的蓝色 */
+		background-color: #1e90ff;
+		/* 选中时的蓝色 */
 	}
 
 	.tab-text {
@@ -172,7 +287,8 @@
 	}
 
 	.service-item {
-		width: 25%; /* 4列 */
+		width: 25%;
+		/* 4列 */
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -189,16 +305,23 @@
 		justify-content: center;
 		margin-bottom: 16rpx;
 		transition: all 0.3s;
+		overflow: hidden; 
+	}
+
+	.service-icon {
+		width: 60%;
+		height: 60%;
 	}
 
 	.icon-box.active-icon {
-		background-color: #8bbdf9; /* 浅蓝色背景 */
+		background-color: #8bbdf9;
+		/* 浅蓝色背景 */
 		border-color: #1e90ff;
 		/* 这里的颜色需要根据图调整，图中是蓝色背景 */
 		background-color: rgba(30, 144, 255, 0.2);
 		border: 2rpx solid #1e90ff;
 	}
-	
+
 	/* 选中时图标颜色在template中通过props控制 */
 
 	.service-name {
@@ -210,7 +333,8 @@
 	/* 底部列表 */
 	.detail-list-scroll {
 		flex: 1;
-		height: 0; /* 配合flex:1 撑开 */
+		height: 0;
+		/* 配合flex:1 撑开 */
 		overflow: hidden;
 	}
 
@@ -218,13 +342,15 @@
 		padding: 0 30rpx;
 		border-top: 2rpx solid #f0f0f0;
 		padding-top: 30rpx;
-		padding-bottom: 100rpx; /* 增加底部留白，防止内容被遮挡 */
+		padding-bottom: 100rpx;
+		/* 增加底部留白，防止内容被遮挡 */
 	}
 
 	.detail-item {
 		display: flex;
 		align-items: center;
-		margin-bottom: 30rpx; /* 增加列表项间距 */
+		margin-bottom: 30rpx;
+		/* 增加列表项间距 */
 	}
 
 	.detail-img {

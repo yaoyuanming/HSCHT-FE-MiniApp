@@ -2,17 +2,18 @@
 	<view class="container">
 		<!-- 更多国家列表 -->
 		<view class="country-grid">
-			<view class="country-item" v-for="(item, index) in countryList" :key="index" @click="openPopup">
-				<image class="country-img" :src="item.image" mode="aspectFill"></image>
+			<view class="country-item" v-for="(item, index) in countryList" :key="index" @click="openPopup(item)">
+				<image class="country-img" :src="item.nationalFlagUrl" mode="aspectFill"></image>
 				<view class="country-overlay">
-					<text class="country-name">{{ item.name }}</text>
+					<text class="country-name">{{ item.countryName }}</text>
 				</view>
 			</view>
 		</view>
 
 		<!-- 底部弹窗 -->
 		<uni-popup ref="popup" type="bottom" :safe-area="false">
-			<HomeService @close="closePopup"></HomeService>
+			<HomeService ref="homeService" @close="closePopup" :initial-country="selectedCountry"
+				:all-countries="countryList"></HomeService>
 		</uni-popup>
 	</view>
 </template>
@@ -20,6 +21,9 @@
 <script>
 	import HomeService from '@/pages/Home/Component/Home_Service.vue'
 	import UniPopup from '@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue'
+	import {
+		getCountryList
+	} from '@/api/country.js'
 
 	export default {
 		components: {
@@ -28,15 +32,24 @@
 		},
 		data() {
 			return {
-				// 模拟更多国家数据，全部使用占位图
-				countryList: Array.from({ length: 15 }).map((_, i) => ({
-					name: '国家名称',
-					image: '/static/Country/china.jpg'
-				}))
+				countryList: [],
+				selectedCountry: {}
 			}
 		},
+		mounted() {
+			this.fetchCountryList()
+		},
 		methods: {
-			openPopup() {
+			async fetchCountryList() {
+				try {
+					const res = await getCountryList()
+					this.countryList = res.data?.rows || res.rows || res.data || []
+				} catch (e) {
+					console.error('获取国家列表失败', e)
+				}
+			},
+			openPopup(item) {
+				this.selectedCountry = item
 				this.$refs.popup.open()
 			},
 			closePopup() {

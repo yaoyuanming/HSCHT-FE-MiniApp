@@ -2,23 +2,29 @@
 	<view class="container">
 		<!-- 顶部Banner -->
 		<view class="banner">
-			<image class="banner-img" src="/static/Country/china.jpg" mode="aspectFill"></image>
+			<image class="banner-img" :src="detail.articleImageUrl || '/static/Country/china.jpg'" mode="aspectFill"></image>
 			<view class="banner-overlay">
-				<text class="banner-title">全球出海服务解决方案</text>
+				<text class="banner-title">{{ detail.articleName || '全球出海服务解决方案' }}</text>
 			</view>
 		</view>
 
 		<!-- 内容区域 -->
 		<view class="content">
-			<view class="text-block">
-				<text>我们提供全方位的出海服务，帮助中国企业顺利进入全球市场，实现品牌国际化和业务增长。从市场调研到本地化运营，从合规咨询到营销推广，我们为您提供端到端的解决方案。</text>
+			<!-- 价格展示 -->
+			<view class="price-block" v-if="detail.price">
+				<text class="price-symbol">¥</text>
+				<text class="price-value">{{ detail.price }}</text>
 			</view>
-			<view class="text-block">
-				<text>凭借多年的国际市场经验和专业团队，我们已成功协助超过500家企业拓展海外业务，覆盖欧美、东南亚、中东等主要市场区域。</text>
-			</view>
-			<view class="text-block">
-				<text>无论您是初创企业还是成熟品牌，我们都能根据您的需求定制专属出海策略，降低国际化风险，提升市场成功率。</text>
-			</view>
+			
+			<!-- 富文本内容 -->
+			<rich-text :nodes="detail.content" class="rich-text"></rich-text>
+			
+			<!-- 如果没有富文本内容，显示默认文本 -->
+			<block v-if="!detail.content">
+				<view class="text-block">
+					<text>{{ detail.articleIntro || '我们提供全方位的出海服务，帮助中国企业顺利进入全球市场，实现品牌国际化和业务增长。' }}</text>
+				</view>
+			</block>
 		</view>
 
 		<!-- 底部按钮 -->
@@ -29,13 +35,49 @@
 </template>
 
 <script>
+	import { getServiceArticleDetail } from '@/api/service.js'
+
 	export default {
 		data() {
 			return {
-				
+				detail: {}
+			}
+		},
+		onLoad(options) {
+			if (options.id) {
+				this.getDetail(options.id)
 			}
 		},
 		methods: {
+			async getDetail(id) {
+				try {
+					uni.showLoading({
+						title: '加载中...'
+					})
+					const res = await getServiceArticleDetail(id)
+					if (res.code === 200) {
+						this.detail = res.data || {}
+						
+						// 处理富文本图片宽度
+						if (this.detail.content) {
+							this.detail.content = this.detail.content.replace(/\<img/gi, '<img style="max-width:100%;height:auto;display:block;"')
+						}
+						
+						// 设置标题
+						uni.setNavigationBarTitle({
+							title: this.detail.articleName || '服务详情'
+						})
+					}
+				} catch (e) {
+					console.error('获取详情失败', e)
+					uni.showToast({
+						title: '获取详情失败',
+						icon: 'none'
+					})
+				} finally {
+					uni.hideLoading()
+				}
+			},
 			consult() {
 				uni.showToast({
 					title: '咨询功能开发中',
@@ -83,6 +125,20 @@
 	.content {
 		padding: 40rpx 30rpx;
 	}
+	
+	.price-block {
+		margin-bottom: 30rpx;
+		color: #ff4d4f;
+		font-weight: bold;
+	}
+	
+	.price-symbol {
+		font-size: 28rpx;
+	}
+	
+	.price-value {
+		font-size: 40rpx;
+	}
 
 	.text-block {
 		margin-bottom: 30rpx;
@@ -90,6 +146,12 @@
 		color: #666666;
 		line-height: 1.8;
 		text-align: justify;
+	}
+	
+	.rich-text {
+		font-size: 28rpx;
+		color: #333333;
+		line-height: 1.8;
 	}
 
 	.footer {
