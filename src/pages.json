@@ -32,14 +32,14 @@
 		"path" : "pages/Course/Course",
 		"style" : 
 		{
-			"navigationStyle": "custom"
+			"navigationBarTitleText" : "活动"
 		}
 	},
 	{
 		"path" : "pages/Course/detail",
 		"style" : 
 		{
-			"navigationStyle": "custom"
+			"navigationBarTitleText" : "活动详情"
 		}
 	},
 	{

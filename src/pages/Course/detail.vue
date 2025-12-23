@@ -1,22 +1,5 @@
 <template>
 	<view class="detail-page">
-		<!-- 自定义导航栏 -->
-		<view class="custom-nav-bar">
-			<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-			<view class="nav-content">
-				<view class="nav-left" @click="goBack">
-					<uni-icons type="arrowleft" size="24" color="#333333"></uni-icons>
-					<text class="nav-title">课程详情</text>
-				</view>
-				<view class="nav-right">
-					<uni-icons type="more-filled" size="22" color="#333333" class="nav-icon"></uni-icons>
-				</view>
-			</view>
-		</view>
-
-		<!-- 占位符，防止内容被导航遮挡 -->
-		<view class="content-placeholder" :style="{ height: (statusBarHeight + 44) + 'px' }"></view>
-
 		<view class="course-detail">
 			<view v-if="loading" class="loading">
 				<view class="skeleton media"></view>
@@ -27,12 +10,11 @@
 			<view v-else-if="!course">
 				<view class="empty-tip">未找到课程信息</view>
 			</view>
-
 			<view v-else class="content">
 				<view class="top-card">
 					<view class="top-card-body">
 						<view class="top-card-title">
-							{{ course.courseName }}
+							{{ course.activityName }}
 						</view>
 
 						<view class="top-card-row">
@@ -48,18 +30,17 @@
 							</view>
 							<view class="top-card-right">
 								<text class="top-card-people">
-									课程人数：{{ course.enrolledParticipants || 0 }}/{{ course.maxParticipants || '不限' }}
+									人数：--
 								</text>
 							</view>
 						</view>
 					</view>
 
 					<view class="media-wrapper">
-						<template v-if="isOnlineCourse && course.videoUrl">
+						<template v-if="course.contentUrl">
 							<!-- #ifdef MP-WEIXIN -->
 							<video
-								v-if="canPlayVideo"
-								:src="course.videoUrl"
+								:src="course.contentUrl"
 								controls
 								:show-center-play-btn="true"
 								:show-play-btn="true"
@@ -72,43 +53,35 @@
 							<!-- #endif -->
 							<!-- #ifndef MP-WEIXIN -->
 							<hic-video-player
-								v-if="canPlayVideo"
-								:src="course.videoUrl"
+								:src="course.contentUrl"
 								:controls="true"
 								width="100%"
 								class="media-player video-player"
 							></hic-video-player>
 							<!-- #endif -->
-
-							<view v-if="!canPlayVideo" class="video-locked">
-								<image :src="course.photoUrl || defaultCover" mode="aspectFill" class="media-player" />
-								<view class="locked-mask">
-									<text>购买后观看视频</text>
-								</view>
-							</view>
 						</template>
 
 						<template v-else>
-							<image :src="course.photoUrl || defaultCover" mode="aspectFill" class="media-player" />
+							<image :src="course.activityImageUrl || defaultCover" mode="aspectFill" class="media-player" />
 						</template>
 					</view>
 				</view>
 
 				<view class="info-card">
-					<view class="info-card-title">课程详情</view>
+					<view class="info-card-title">活动详情</view>
 
 					<view class="intro-box">
-						<rich-text :nodes="course.courseIntroduction || '<p>暂无介绍</p>'"></rich-text>
+						<rich-text :nodes="course.introduction || '<p>暂无介绍</p>'"></rich-text>
 					</view>
 
-					<view class="course-extra" v-if="isOfflineCourse">
-						<view class="info-item">
-							<text class="label">课程地址：</text>
-							<text class="value">{{ course.courseAddress || '待定' }}</text>
+					<view class="course-extra" v-if="course?.address || courseTimeText !== '待定'">
+						<view class="info-item" v-if="course?.address">
+							<text class="label">活动地址：</text>
+							<text class="value">{{ course.address }}</text>
 						</view>
-						<view class="info-item">
-							<text class="label">课程时间：</text>
-							<text class="value">{{ course.courseTime || '待定' }}</text>
+						<view class="info-item" v-if="courseTimeText !== '待定'">
+							<text class="label">活动时间：</text>
+							<text class="value">{{ courseTimeText }}</text>
 						</view>
 					</view>
 				</view>
@@ -126,54 +99,56 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { getActivityDetail } from '@/api/activity'
 
 const defaultCover = '/static/index/video.png'
 
 const course = ref(null)
 const loading = ref(true)
 const currentId = ref(null)
-const statusBarHeight = ref(20)
 
-const isOnlineCourse = computed(() => course.value?.courseType === 2)
-const isOfflineCourse = computed(() => course.value?.courseType === 1)
-const needPay = computed(() => !!course.value && course.value?.paymentMethod === 2)
-const canPlayVideo = computed(() => !!course.value?.enrolled)
+const isOnlineCourse = computed(() => Number(course.value?.type) === 1)
+const isOfflineCourse = computed(() => Number(course.value?.type) === 0)
+const needPay = computed(() => {
+	if (!course.value) return false
+	return Number(course.value?.paymentMethod) !== 1
+})
+const canPlayVideo = computed(() => {
+	if (!course.value) return false
+	// 免费内容允许直接播放；如果后端后续返回“已购买/已报名”字段，可在这里追加判断
+	if (Number(course.value?.paymentMethod) === 1) return true
+	return !!course.value?.enrolled
+})
+
+const courseTimeText = computed(() => {
+	if (!course.value) return '待定'
+	const start = course.value?.activityTimeStart
+	const end = course.value?.activityTimeEnd
+	if (!start && !end) return '待定'
+	if (start && end) return `${start} ~ ${end}`
+	return start || end
+})
 
 const priceDisplay = computed(() => {
 	if (!course.value) return '¥ --'
-	if (course.value.paymentMethod === 1) return '免费'
-	return course.value.price ? `¥ ${Number(course.value.price).toFixed(2)}` : '¥ --'
+	if (Number(course.value.paymentMethod) === 1) return '免费'
+	const hasPrice = course.value.price !== null && course.value.price !== undefined
+	return hasPrice ? `¥ ${Number(course.value.price).toFixed(2)}` : '¥ --'
 })
 
 const primaryText = computed(() => {
-	if (course.value?.enrolled) return '已报名'
 	return needPay.value ? '立即购买' : '立即报名'
 })
-
-const buildMockDetail = (id) => {
-	const num = Number(id || 1)
-	return {
-		id: String(id || 1),
-		courseName: `示例课程 ${id || 1}`,
-		courseType: num % 2 === 0 ? 2 : 1,
-		paymentMethod: 1,
-		price: 0,
-		photoUrl: '',
-		videoUrl: '',
-		enrolled: false,
-		enrolledParticipants: 12,
-		maxParticipants: num % 3 === 0 ? 200 : null,
-		courseIntroduction: '<p>这里是课程介绍（布局预览）。</p><p>后续接接口后再替换。</p>',
-		courseAddress: '待定',
-		courseTime: '待定'
-	}
-}
 
 const loadDetail = async (id) => {
 	loading.value = true
 	try {
-		await new Promise((r) => setTimeout(r, 300))
-		course.value = buildMockDetail(id)
+		if (!id) {
+			course.value = null
+			return
+		}
+		const res = await getActivityDetail(id)
+		course.value = res?.data || null
 	} finally {
 		loading.value = false
 	}
@@ -181,7 +156,7 @@ const loadDetail = async (id) => {
 
 const handlePrimaryAction = async () => {
 	uni.showToast({
-		title: '仅布局预览：暂不支持报名/购买',
+		title: '暂不支持报名/购买',
 		icon: 'none'
 	})
 }
@@ -190,10 +165,9 @@ const goBack = () => {
 	uni.navigateBack()
 }
 
+
 onLoad(async (options) => {
-	const sysInfo = uni.getSystemInfoSync()
-	statusBarHeight.value = sysInfo.statusBarHeight || 20
-	currentId.value = options?.id
+	currentId.value = options?.id ? decodeURIComponent(options.id) : options?.id
 	await loadDetail(currentId.value)
 })
 
@@ -214,48 +188,6 @@ page {
 	padding: 24rpx;
 	padding-bottom: 140rpx;
 	background: #f5f6fa;
-}
-
-.custom-nav-bar {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	background-color: #ffffff;
-	z-index: 101;
-}
-
-.nav-content {
-	height: 44px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 0 20rpx;
-}
-
-.nav-left {
-	display: flex;
-	align-items: center;
-}
-
-.nav-title {
-	font-size: 34rpx;
-	font-weight: bold;
-	color: #333333;
-	margin-left: 10rpx;
-}
-
-.nav-right {
-	display: flex;
-	align-items: center;
-}
-
-.nav-icon {
-	margin-left: 30rpx;
-}
-
-.content-placeholder {
-	width: 100%;
 }
 
 .course-detail {
