@@ -27,7 +27,7 @@
 			<!-- 如果没有富文本内容，显示默认文本 -->
 			<block v-if="!detail.content">
 				<view class="text-block">
-					<text>{{ detail.intro || '我们提供全方位的出海服务，帮助中国企业顺利进入全球市场，实现品牌国际化和业务增长。' }}</text>
+					<rich-text :nodes="detail.intro || '我们提供全方位的出海服务，帮助中国企业顺利进入全球市场，实现品牌国际化和业务增长。'" class="rich-text"></rich-text>
 				</view>
 			</block>
 		</view>
@@ -99,9 +99,15 @@
 							})
 						}
 						
-						// 处理富文本图片宽度
+						// 处理富文本图片宽度和换行
 						if (this.detail.content) {
 							this.detail.content = this.detail.content.replace(/\<img/gi, '<img style="max-width:100%;height:auto;display:block;"')
+							this.detail.content = this.detail.content.replace(/\n/g, '<br/>')
+						}
+						
+						// 处理简介换行
+						if (this.detail.intro) {
+							this.detail.intro = this.detail.intro.replace(/\n/g, '<br/>')
 						}
 					}
 				} catch (e) {

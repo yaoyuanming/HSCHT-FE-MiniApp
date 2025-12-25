@@ -14,15 +14,14 @@
 		<!-- 表单内容 -->
 		<scroll-view scroll-y class="form-content" :style="{ paddingTop: (statusBarHeight + 44) + 'px' }">
 			<view class="form-container">
-				<!-- 投资意向 -->
+				<!-- 咨询内容 -->
 				<view class="form-item">
 					<view class="label-row">
 						<text class="required">*</text>
-						<text class="label">投资意向</text>
+						<text class="label">咨询内容</text>
 					</view>
 					<textarea class="textarea" placeholder-style="color:#cccccc"
-						placeholder="请详细描述您的投资意向、金额范围、期望回报等信息" v-model="formData.intention" />
-					<text class="example-text">示例：计划投资1000万-5000万元，寻求科技领域优质项目，期望年化回报率15%以上</text>
+						placeholder="请输入你要咨询的内容" v-model="formData.intention" />
 				</view>
 
 				<!-- 公司名称 -->
@@ -69,6 +68,8 @@
 
 <script>
 	import UniIcons from '@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue'
+	import { submitTicket } from '@/api/ticket.js'
+	import { utilsConfig } from '@/config/utils.js'
 
 	export default {
 		components: {
@@ -100,10 +101,10 @@
 			goBack() {
 				uni.navigateBack();
 			},
-			submit() {
+			async submit() {
 				// 简单校验
 				if (!this.formData.intention) return uni.showToast({
-					title: '请填写投资意向',
+					title: '请填写咨询内容',
 					icon: 'none'
 				});
 				if (!this.formData.company) return uni.showToast({
@@ -122,7 +123,20 @@
 				uni.showLoading({
 					title: '提交中...'
 				});
-				setTimeout(() => {
+				
+				try {
+					const params = {
+						description: this.formData.intention,
+						companyName: this.formData.company,
+						contactName: this.formData.name,
+						contactPhone: this.formData.phone,
+						category: 0, // 0:咨询
+						status: 0, // 0:待处理
+						assignTenantId: utilsConfig.tenantId // 传递租户ID
+					}
+					
+					await submitTicket(params)
+					
 					uni.hideLoading();
 					uni.showToast({
 						title: '提交成功',
@@ -131,7 +145,14 @@
 					setTimeout(() => {
 						uni.navigateBack();
 					}, 1500);
-				}, 1000);
+				} catch (e) {
+					uni.hideLoading();
+					console.error('Submit ticket failed:', e)
+					uni.showToast({
+						title: '提交失败，请重试',
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}

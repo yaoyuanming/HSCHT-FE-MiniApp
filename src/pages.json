@@ -77,6 +77,24 @@
 		{
 			"navigationBarTitleText" : "详情"
 		}
+	},
+	{
+		"path" : "pages/My/funtion/word_order",
+		"style" : 
+		{
+			"navigationBarTitleText" : "工单管理",
+			"navigationBarBackgroundColor": "#007AFF",
+			"navigationBarTextStyle": "white"
+		}
+	},
+	{
+		"path" : "pages/My/funtion/word_order_detail",
+		"style" : 
+		{
+			"navigationBarTitleText" : "工单详情",
+			"navigationBarBackgroundColor": "#007AFF",
+			"navigationBarTextStyle": "white"
+		}
 	}],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
@@ -109,7 +127,7 @@
 				"pagePath": "pages/Course/Course",
 				"iconPath": "/static/nav/course.png",
 				"selectedIconPath": "/static/nav/course-active.png",
-				"text": "课程"
+				"text": "活动"
 			},
 			{
 				"pagePath": "pages/Guide/Guide",

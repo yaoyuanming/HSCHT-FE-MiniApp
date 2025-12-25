@@ -31,7 +31,7 @@
 				<view class="icon-wrapper orange-bg">
 					<text class="icon">🎟️</text>
 				</view>
-				<text class="grid-text">政务工单</text>
+				<text class="grid-text">工单管理</text>
 			</view>
 		</view>
 
@@ -86,7 +86,12 @@
 			},
 			onNavClick(type) {
 				console.log('Clicked navigation:', type);
-				// TODO: 跳转对应页面
+				if (type === 'gov') {
+					uni.navigateTo({
+						url: '/pages/My/funtion/word_order'
+					})
+				}
+				// TODO: 其他类型跳转
 			},
 			onRecharge() {
 				console.log('Clicked recharge');

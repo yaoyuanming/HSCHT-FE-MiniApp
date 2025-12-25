@@ -141,7 +141,9 @@
 						title: '加载中...'
 					})
 					const res = await getServiceArticleList(params)
-					this.articles = res.data?.rows || res.rows || res.data || []
+					let list = res.data?.rows || res.rows || res.data || []
+					// 过滤未发布的文章 (status: 0 草稿, 1 已发布)
+					this.articles = list.filter(item => item.status == 1)
 				} catch (e) {
 					console.error('获取文章列表失败', e)
 				} finally {

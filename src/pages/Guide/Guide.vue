@@ -122,7 +122,11 @@
 					});
 					let list = res.data?.rows || res.rows || res.data || [];
 					
-					// 3. 前端兜底筛选
+					// 过滤未发布的文章 (status: 0 草稿, 1 已发布)
+					list = list.filter(item => item.status == 1);
+
+					// 3. 前端兜底筛选 - 暂时移除，信任后端接口返回的数据
+					/*
 					if (list.length > 0) {
 						const firstItem = list[0];
 						
@@ -138,6 +142,7 @@
 							list = list.filter(item => item.servicesTypeId == countryId || validServiceTypeIds.includes(item.servicesTypeId));
 						}
 					}
+					*/
 					
 					this.guideList = list;
 				} catch (e) {
