@@ -121,10 +121,10 @@
 				}
 			},
 			consult() {
-				uni.showToast({
-					title: '咨询功能开发中',
-					icon: 'none'
-				});
+				// 跳转到咨询页面，传递服务名称和类型(1:服务工单)
+				uni.navigateTo({
+					url: `/pages/Home/Component/consult?category=1&service=${encodeURIComponent(this.detail.title || '')}`
+				})
 			}
 		}
 	}

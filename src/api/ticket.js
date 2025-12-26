@@ -25,8 +25,3 @@ export const getTicketActivityLogList = (id) => {
 export const addTicketActivityLog = (data) => {
   return request('post', '/services/activityLog', data)
 }
-
-// 新增工单附件（独立接口）
-export const addTicketFile = (data) => {
-  return request('post', '/services/file', data)
-}

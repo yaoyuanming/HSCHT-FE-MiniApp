@@ -6,7 +6,7 @@
 				<view class="nav-left" @click="goBack">
 					<image src="/static/back.png" mode="aspectFit" class="nav-back-icon"></image>
 				</view>
-				<text class="nav-title">我要咨询</text>
+				<text class="nav-title">{{ pageTitle }}</text>
 				<view class="nav-right"></view>
 			</view>
 		</view>
@@ -84,17 +84,28 @@
 					name: '',
 					phone: ''
 				},
-				serviceName: ''
+				serviceName: '',
+				category: 0, // 0:咨询工单, 1:服务工单
+				pageTitle: '我要咨询'
 			}
 		},
 		onLoad(options) {
 			const sysInfo = uni.getSystemInfoSync();
 			this.statusBarHeight = sysInfo.statusBarHeight;
 
+			if (options.category) {
+				this.category = Number(options.category);
+				if (this.category === 1) {
+					this.pageTitle = '服务咨询';
+				}
+			}
+
 			if (options.service) {
 				this.serviceName = options.service;
-				// 可以自动填充意向
-				// this.formData.intention = `关于${options.service}的咨询...`;
+				// 如果是服务工单，且有服务名称，自动填充咨询内容
+				if (this.category === 1) {
+					this.formData.intention = `我对【${options.service}】很感兴趣，想了解更多详情。`;
+				}
 			}
 		},
 		methods: {
@@ -130,7 +141,7 @@
 						companyName: this.formData.company,
 						contactName: this.formData.name,
 						contactPhone: this.formData.phone,
-						category: 0, // 0:咨询
+						category: this.category, // 使用动态分类
 						status: 0, // 0:待处理
 						assignTenantId: utilsConfig.tenantId // 传递租户ID
 					}

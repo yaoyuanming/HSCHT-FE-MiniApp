@@ -122,7 +122,7 @@
 </template>
 
 <script>
-	import { getTicketDetail, getTicketActivityLogList, addTicketActivityLog, addTicketFile } from '@/api/ticket.js'
+	import { getTicketDetail, getTicketActivityLogList, addTicketActivityLog } from '@/api/ticket.js'
 	import { mapGetters } from 'vuex'
 
 	export default {
@@ -168,10 +168,22 @@
 		methods: {
 			handleFileSelect(e) {
 				console.log('File selected:', e)
-				// uni-file-picker v-model handles the files list update
+				// 手动更新 replyFiles，解决 v-model 可能不生效的问题
+				if (e.tempFiles) {
+					// 避免重复添加
+					const newFiles = e.tempFiles.filter(nf => 
+						!this.replyFiles.some(of => (of.path || of.url) === (nf.path || nf.url))
+					)
+					this.replyFiles = [...this.replyFiles, ...newFiles]
+				}
 			},
 			handleFileDelete(e) {
 				console.log('File deleted:', e)
+				// 手动从 replyFiles 中移除
+				const delPath = e.tempFilePath || e.filePath || (e.tempFile && e.tempFile.path)
+				if (delPath) {
+					this.replyFiles = this.replyFiles.filter(f => (f.path || f.url) !== delPath)
+				}
 			},
 			async submitReply() {
 				if (!this.replyContent && this.replyFiles.length === 0) {
@@ -184,23 +196,6 @@
 					let uploadedFileList = []
 					if (this.replyFiles.length > 0) {
 						uploadedFileList = await this.uploadFiles()
-						
-						// 为每个文件调用新增附件接口
-						if (uploadedFileList.length > 0) {
-							console.log('Adding ticket files via API...')
-							try {
-								await Promise.all(uploadedFileList.map(file => {
-									// 设置关联的工单ID
-									file.mainId = this.ticketId
-									// 调用新增附件接口
-									return addTicketFile(file)
-								}))
-								console.log('All ticket files added successfully')
-							} catch (err) {
-								console.error('Failed to add ticket files:', err)
-								throw new Error('附件保存失败: ' + (err.msg || err.message || '未知错误'))
-							}
-						}
 					}
 					
 					const data = {
@@ -292,8 +287,24 @@
 
 						if (data.code === 200 && data.data) {
 							const ossData = data.data
-							
+
 							// 按照管理端 wordorder_handle.vue 的结构构建对象
+							// 按照用户要求，将上传文件的返回结果赋值给 ossId
+							let finalOssId = null
+							if (ossData && typeof ossData === 'object') {
+								// 如果是对象，尝试提取 ID
+								finalOssId = ossData.ossId || ossData.id || ossData.ossid || ossData.fileId
+							} else if (ossData) {
+								// 如果 data.data 直接是 ID (基本类型)
+								finalOssId = ossData
+							}
+
+							if (!finalOssId) {
+								console.error('Critical: ossId is missing in upload response!', ossData)
+							} else {
+								console.log('Got ossId for upload:', finalOssId)
+							}
+							
 							uploadedList.push({
 								createBy: undefined,
 								createDept: undefined,
@@ -303,7 +314,7 @@
 								fileSuffix: ossData.fileSuffix,
 								mainId: undefined,
 								originalName: ossData.originalName,
-								ossId: Number(ossData.ossId), // 强制转为数字，与管理端保持一致
+								ossId: finalOssId, // 优先取 ossId/id/ossid/fileId
 								params: undefined,
 								service: ossData.service,
 								type: 0, // 0:工单日志
@@ -408,10 +419,23 @@
 				// 获取文件后缀
 				let fileType = (file.fileSuffix || '').toLowerCase().replace('.', '')
 				if (!fileType) {
-					const name = file.originalName || file.fileName || fileUrl
-					const index = name.lastIndexOf('.')
-					if (index > -1) {
-						fileType = name.substring(index + 1).toLowerCase()
+					// 优先使用 originalName 或 fileName
+					const name = file.originalName || file.fileName
+					if (name) {
+						const index = name.lastIndexOf('.')
+						if (index > -1) {
+							fileType = name.substring(index + 1).toLowerCase()
+						}
+					}
+					
+					// 如果还是没有，尝试从 URL 获取，注意去除查询参数
+					if (!fileType && fileUrl) {
+						// 去除查询参数
+						const urlWithoutQuery = fileUrl.split('?')[0]
+						const index = urlWithoutQuery.lastIndexOf('.')
+						if (index > -1) {
+							fileType = urlWithoutQuery.substring(index + 1).toLowerCase()
+						}
 					}
 				}
 				
@@ -430,7 +454,10 @@
 						url: fileUrl,
 						success: (res) => {
 							if (res.statusCode === 200) {
-								uni.openDocument({
+								console.log('Download success, temp path:', res.tempFilePath)
+								
+								// 构建 openDocument 参数
+								const openDocOptions = {
 									filePath: res.tempFilePath,
 									showMenu: true,
 									success: () => {
@@ -438,9 +465,18 @@
 									},
 									fail: (e) => {
 										console.error('Open document failed:', e)
-										uni.showToast({ title: '不支持的文件格式', icon: 'none' })
+										uni.showToast({ title: '无法打开此文件', icon: 'none' })
 									}
-								})
+								}
+								
+								// 显式指定文件类型 (如果是支持的文档格式)
+								// uni.openDocument 支持的格式：doc, docx, xls, xlsx, ppt, pptx, pdf
+								const supportedTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf']
+								if (supportedTypes.includes(fileType)) {
+									openDocOptions.fileType = fileType
+								}
+								
+								uni.openDocument(openDocOptions)
 							} else {
 								uni.showToast({ title: '文件下载失败', icon: 'none' })
 							}
@@ -500,6 +536,12 @@
 						fileUrl = baseUrl + (fileUrl.startsWith('/') ? '' : '/') + fileUrl
 					}
 				}
+				
+				// 检查 OSS 区域不匹配问题 (Host 为 cn-guangzhou 但签名为 us-east-1，会导致 403 Forbidden)
+				if (fileUrl && fileUrl.includes('oss-cn-guangzhou') && fileUrl.includes('us-east-1')) {
+					console.warn('OSS Region Mismatch Detected: Host is cn-guangzhou but signature is for us-east-1. This usually causes 403 Forbidden.', fileUrl)
+				}
+				
 				return fileUrl
 			},
 			isImage(file) {

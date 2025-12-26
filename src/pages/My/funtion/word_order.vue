@@ -53,7 +53,8 @@
 			async fetchList() {
 				try {
 					uni.showLoading({ title: '加载中' })
-					const res = await getTicketList()
+					// 传入 isQuerySelf: true 只查询当前用户的工单
+					const res = await getTicketList({ isQuerySelf: true })
 					const list = res.data?.rows || res.rows || res.data || []
 					this.orderList = list.map(item => ({
 						id: item.id,
