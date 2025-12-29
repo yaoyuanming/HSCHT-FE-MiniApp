@@ -115,7 +115,7 @@ http.interceptors.response.use(async response => {
 })
 
 // 执行静默登录
-function doSilentLogin() {
+export function doSilentLogin() {
     return new Promise((resolve, reject) => {
         uni.login({
             provider: 'weixin',

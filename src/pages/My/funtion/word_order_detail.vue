@@ -53,18 +53,33 @@
 							<uni-icons :type="item.icon" size="20" :color="item.iconColor"></uni-icons>
 						</view>
 						<view class="timeline-content">
+						<!-- 工单分配特殊样式 (ActivityType 1) -->
+						<template v-if="Number(item.activityType) === 1">
+							<view class="timeline-header-assign">
+								<text class="timeline-title">{{ item.title }}</text>
+								<text class="assignee-name">{{ item.description }}</text>
+							</view>
+							<view class="timeline-time-row">
+								<text class="timeline-time">{{ item.createTime }}</text>
+							</view>
+						</template>
+
+						<!-- 其他样式 (创建、处理等) -->
+						<template v-else>
 							<view class="timeline-header">
 								<text class="timeline-title">{{ item.title }}</text>
 								<text class="timeline-time">{{ item.createTime }}</text>
 							</view>
-							<!-- 描述/回复内容 -->
-						<view class="reply-box" v-if="item.description || (item.files && item.files.length > 0)">
-							<text class="reply-text" v-if="item.description">{{ item.description }}</text>
+						</template>
+
+						<!-- 描述/回复内容 -->
+						<view class="reply-box" v-if="(Number(item.activityType) !== 1 && item.description) || (item.files && item.files.length > 0)">
+							<text class="reply-text" v-if="Number(item.activityType) !== 1 && item.description">{{ item.description }}</text>
 							
 							<!-- 附件 -->
 							<view v-if="item.files && item.files.length > 0">
 								<view class="reply-label">附件：</view>
-									<view class="attachment-list">
+								<view class="attachment-list">
 										<view class="attachment-item" v-for="(file, fIndex) in item.files" :key="fIndex" @click="openFile(file)">
 											<template v-if="isImage(file)">
 												<image :src="getFileUrl(file)" mode="aspectFill" class="attachment-thumb"></image>
@@ -124,6 +139,7 @@
 <script>
 	import { getTicketDetail, getTicketActivityLogList, addTicketActivityLog } from '@/api/ticket.js'
 	import { mapGetters } from 'vuex'
+	import { utilsConfig } from '@/config/utils.js'
 
 	export default {
 		data() {
@@ -229,6 +245,53 @@
 					this.submitting = false
 				}
 			},
+			/**
+			 * 统一执行文件上传
+			 * @param {string} uploadUrl 上传接口地址
+			 * @param {string} filePath 文件路径
+			 * @param {string} token 认证Token
+			 */
+			async performUpload(uploadUrl, filePath, token) {
+				const res = await new Promise((resolve, reject) => {
+					uni.uploadFile({
+						url: uploadUrl,
+						filePath: filePath,
+						name: 'file',
+						header: {
+							'Authorization': 'Bearer ' + token,
+							'clientid': utilsConfig.clientId,
+							'tenant-id': utilsConfig.tenantId
+						},
+						success: resolve,
+						fail: reject
+					})
+				})
+				return this.parseUploadResponse(res)
+			},
+
+			/**
+			 * 解析上传响应，处理大整数精度丢失问题
+			 * @param {Object} res uni.uploadFile 的响应对象
+			 */
+			parseUploadResponse(res) {
+				try {
+					let data
+					if (typeof res.data === 'string') {
+						let jsonString = res.data
+						// 将 ossId, id 等长整数转换为字符串
+						jsonString = jsonString.replace(/"ossId"\s*:\s*(\d{15,})/g, '"ossId":"$1"')
+						jsonString = jsonString.replace(/"id"\s*:\s*(\d{15,})/g, '"id":"$1"')
+						data = JSON.parse(jsonString)
+					} else {
+						data = res.data
+					}
+					return data
+				} catch (e) {
+					console.error('Parse upload response failed', res.data)
+					throw new Error('Upload response parse failed')
+				}
+			},
+
 			async uploadFiles() {
 				const uploadedList = []
 				const baseUrl = import.meta.env.VITE_API_BASE_URL
@@ -248,42 +311,22 @@
 					}
 
 					try {
-						const res = await new Promise((resolve, reject) => {
-							uni.uploadFile({
-								url: uploadUrl,
-								filePath: filePath,
-								name: 'file',
-								header: {
-									'Authorization': 'Bearer ' + token
-								},
-								success: (uploadRes) => {
-									resolve(uploadRes)
-								},
-								fail: (err) => {
-									reject(err)
-								}
-							})
-						})
-						
-						console.log('Upload result raw:', res)
-						let data 
-						try {
-							if (typeof res.data === 'string') {
-								// 处理大整数精度丢失问题
-								let jsonString = res.data
-								// 将 ossId, id 等长整数转换为字符串
-								jsonString = jsonString.replace(/"ossId"\s*:\s*(\d{15,})/g, '"ossId":"$1"')
-								jsonString = jsonString.replace(/"id"\s*:\s*(\d{15,})/g, '"id":"$1"')
-								data = JSON.parse(jsonString)
-							} else {
-								data = res.data
-							}
-						} catch (e) {
-							console.error('Parse upload response failed', res.data)
-							throw new Error('Upload response parse failed')
-						}
-
+						let data = await this.performUpload(uploadUrl, filePath, token)
 						console.log('Upload result parsed:', data)
+
+						// 检查 401 错误 (Client ID与Token不匹配)
+						if (data.code === 401) {
+							console.log('Upload 401 encountered, trying silent login...')
+							try {
+								// 尝试刷新 token
+								const newToken = await doSilentLogin()
+								// 使用新 token 重试上传
+								data = await this.performUpload(uploadUrl, filePath, newToken)
+							} catch (refreshErr) {
+								console.error('Silent login failed during upload retry:', refreshErr)
+								throw new Error('登录已过期，请重新登录')
+							}
+						}
 
 						if (data.code === 200 && data.data) {
 							const ossData = data.data
@@ -385,10 +428,16 @@
 						}
 					}
 					
+					let description = item.description
+					// 移除工单创建时的公司和联系人信息，只保留标题和时间
+					if (Number(item.activityType) === 0) {
+						description = ''
+					}
+
 					return {
 						id: item.id,
 						title: title,
-						description: item.description,
+						description: description,
 						createTime: item.createTime || '', 
 						activityType: item.activityType,
 						files: files, 
@@ -398,17 +447,7 @@
 					}
 				})
 			},
-			async fetchTimeline(ticketId) {
-				try {
-					console.log('Fetching timeline for ticketId:', ticketId)
-					const res = await getTicketActivityLogList(ticketId)
-					console.log('Timeline Response:', res)
-					const list = res.data?.rows || res.rows || res.data || []
-					this.timelineList = this.processTimelineData(list)
-				} catch (e) {
-					console.error('Fetch timeline failed:', e)
-				}
-			},
+
 			openFile(file) {
 				const fileUrl = this.getFileUrl(file)
 				if (!fileUrl) {
@@ -504,19 +543,52 @@
 							customerName: data.contactName,
 							phone: data.contactPhone,
 							company: data.companyName,
-							assignee: data.assignUser?.nickName || data.assignUserId || '未分配',
+							assignee: data.assignUser?.nickName || data.assignUser?.userName || data.assignUserName || data.assignUserId || '未分配',
 							createTime: data.createTime,
 							content: data.description
 						}
 						
-						// Removed timeline update from detail to avoid overwriting complete data from fetchTimeline
-						// with potentially incomplete data from getTicketDetail
+						// 尝试利用 timeline 数据修复 assignee 名称
+						this.tryUpdateAssigneeName()
 					}
 				} catch (e) {
 					console.error('Fetch ticket detail failed:', e)
 					uni.showToast({ title: '加载详情失败', icon: 'none' })
 				} finally {
 					uni.hideLoading()
+				}
+			},
+			async fetchTimeline(ticketId) {
+				try {
+					console.log('Fetching timeline for ticketId:', ticketId)
+					const res = await getTicketActivityLogList(ticketId)
+					console.log('Timeline Response:', res)
+					const list = res.data?.rows || res.rows || res.data || []
+					this.timelineList = this.processTimelineData(list)
+					
+					// 尝试利用 timeline 数据修复 assignee 名称
+					this.tryUpdateAssigneeName()
+				} catch (e) {
+					console.error('Fetch timeline failed:', e)
+				}
+			},
+			tryUpdateAssigneeName() {
+				// 如果当前 assignee 是数字ID（10位以上），尝试从 timeline 修复
+				// 注意：timeline 中的 description 已经是名字了
+				const currentAssignee = this.orderInfo.assignee
+				if (!currentAssignee) return
+
+				const isId = /^\d{10,}$/.test(currentAssignee)
+				
+				if ((isId || currentAssignee === '未分配') && this.timelineList && this.timelineList.length > 0) {
+					// 找最后一条分配记录
+					// 假设 timelineList 是按时间正序排列（旧->新），找最后一个 activityType === 1
+					const allocationLog = [...this.timelineList].reverse().find(item => Number(item.activityType) === 1)
+					
+					if (allocationLog && allocationLog.description) {
+						console.log('Fixing assignee name from timeline:', allocationLog.description)
+						this.orderInfo.assignee = allocationLog.description
+					}
 				}
 			},
 			mapStatusText(status) {
@@ -708,6 +780,22 @@
 	.timeline-time {
 		font-size: 24rpx;
 		color: #999;
+	}
+	
+	.timeline-header-assign {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8rpx;
+	}
+	
+	.assignee-name {
+		font-size: 28rpx;
+		color: #666;
+	}
+	
+	.timeline-time-row {
+		margin-bottom: 16rpx;
 	}
 
 	.reply-box {

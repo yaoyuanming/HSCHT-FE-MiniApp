@@ -102,10 +102,10 @@
 
 			if (options.service) {
 				this.serviceName = options.service;
-				// 如果是服务工单，且有服务名称，自动填充咨询内容
-				if (this.category === 1) {
-					this.formData.intention = `我对【${options.service}】很感兴趣，想了解更多详情。`;
-				}
+				// 用户要求不再自动填充咨询内容，留空让用户自己输入
+				// if (this.category === 1) {
+				// 	this.formData.intention = `我对【${options.service}】很感兴趣，想了解更多详情。`;
+				// }
 			}
 		},
 		methods: {

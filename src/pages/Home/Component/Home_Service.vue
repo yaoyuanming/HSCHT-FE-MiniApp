@@ -30,11 +30,17 @@
 
 		<!-- 底部详情列表 (使用scroll-view) -->
 		<scroll-view scroll-y="true" class="detail-list-scroll">
-			<view class="detail-list">
-				<view class="detail-item" v-for="(item, index) in articles" :key="index" @click="goToDetail(item)">
-					<image class="detail-img" :src="item.articleImageUrl" mode="aspectFill"></image>
-					<text class="detail-title">{{ item.articleName }}</text>
+			<block v-if="articles && articles.length > 0">
+				<view class="detail-list">
+					<view class="detail-item" v-for="(item, index) in articles" :key="index" @click="goToDetail(item)">
+						<image class="detail-img" :src="item.articleImageUrl" mode="aspectFill"></image>
+						<text class="detail-title">{{ item.articleName }}</text>
+					</view>
 				</view>
+			</block>
+			<view class="empty-state" v-else>
+				<uni-icons type="info" size="60" color="#e0e0e0"></uni-icons>
+				<text class="empty-text">暂无相关服务</text>
 			</view>
 		</scroll-view>
 	</view>
@@ -370,5 +376,19 @@
 	.detail-title {
 		font-size: 30rpx;
 		color: #333333;
+	}
+	
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding-top: 100rpx;
+	}
+	
+	.empty-text {
+		margin-top: 20rpx;
+		font-size: 28rpx;
+		color: #999999;
 	}
 </style>
