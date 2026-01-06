@@ -121,9 +121,9 @@
 				}
 			},
 			consult() {
-				// 跳转到咨询页面，传递服务名称和类型(1:服务工单)
+				// 跳转到智能咨询助手，传递服务名称和类型(1:服务工单)
 				uni.navigateTo({
-					url: `/pages/Home/Component/consult?category=1&service=${encodeURIComponent(this.detail.title || '')}`
+					url: `/pages/Home/Component/ai_assistant?category=1&service=${encodeURIComponent(this.detail.title || '')}`
 				})
 			}
 		}

@@ -95,6 +95,20 @@
 			"navigationBarBackgroundColor": "#007AFF",
 			"navigationBarTextStyle": "white"
 		}
+	},
+	{
+		"path" : "pages/Home/Component/ai_assistant",
+		"style" : 
+		{
+			"navigationStyle": "custom"
+		}
+	},
+	{
+		"path" : "pages/Home/Component/artificial",
+		"style" : 
+		{
+			"navigationStyle": "custom"
+		}
 	}],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",

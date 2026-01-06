@@ -129,7 +129,22 @@
 					this.articles = []
 					
 					const res = await getServiceTypeList(params)
-					this.services = res.data?.rows || res.rows || res.data || []
+					let list = res.data?.rows || res.rows || res.data || []
+					
+					// 前端二次筛选：确保只显示当前国家的服务类型
+					if (params.countryId) {
+						list = list.filter(item => {
+							// 兼容 countryId 和 country_id
+							const itemCountryId = item.countryId !== undefined ? item.countryId : item.country_id
+							// 如果服务类型有国家ID，必须匹配；如果没有国家ID，可能是通用服务，保留
+							if (itemCountryId !== undefined && itemCountryId !== null) {
+								return itemCountryId == params.countryId
+							}
+							return true
+						})
+					}
+					
+					this.services = list
 					
 					// 默认不选中服务，直接加载该国家的所有文章
 					if (params.countryId) {
