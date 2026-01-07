@@ -4,112 +4,112 @@
 		"custom": {
 			"^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
 			"^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
-	        "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
+			"^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
 		}
 	},
-	"pages": [{
-		"path" : "pages/Home/Home",
-		"style" : 
+	"pages": [
 		{
-		    "navigationStyle": "custom"
-		}
-	},
-	{
-		"path" : "pages/Service/Service",
-		"style" : 
+			"path": "pages/Home/Home",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
 		{
-			"navigationBarTitleText" : "服务"
-		}
-	},
-	{
-		"path" : "pages/Service/funtion/detail",
-		"style" : 
+			"path": "pages/Service/Service",
+			"style": {
+				"navigationBarTitleText": "服务"
+			}
+		},
 		{
-			"navigationBarTitleText" : "服务详情"
-		}
-	},
-	{
-		"path" : "pages/Course/Course",
-		"style" : 
+			"path": "pages/Service/funtion/detail",
+			"style": {
+				"navigationBarTitleText": "服务详情"
+			}
+		},
 		{
-			"navigationBarTitleText" : "活动"
-		}
-	},
-	{
-		"path" : "pages/Course/detail",
-		"style" : 
+			"path": "pages/Course/Course",
+			"style": {
+				"navigationBarTitleText": "活动"
+			}
+		},
 		{
-			"navigationBarTitleText" : "活动详情"
-		}
-	},
-	{
-		"path" : "pages/Guide/Guide",
-		"style" : 
+			"path": "pages/Course/detail",
+			"style": {
+				"navigationBarTitleText": "活动详情"
+			}
+		},
 		{
-			"navigationStyle": "custom",
-			"navigationBarTitleText" : "指南"
-		}
-	},
-	{
-		"path" : "pages/My/My",
-		"style" : 
+			"path": "pages/Guide/Guide",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "指南"
+			}
+		},
 		{
-			"navigationBarTitleText" : "我的"
-		}
-	},
-	{
-		"path" : "pages/Home/Component/consult",
-		"style" : 
+			"path": "pages/My/My",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
+		},
 		{
-			"navigationStyle": "custom"
-		}
-	},
-	{
-		"path" : "pages/Home/Component/government",
-		"style" : 
+			"path": "pages/Home/Component/consult",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
 		{
-			"navigationStyle": "custom"
-		}
-	},
-	{
-		"path" : "pages/Guide/funtion/guide_detail",
-		"style" : 
+			"path": "pages/Home/Component/government",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
 		{
-			"navigationBarTitleText" : "详情"
-		}
-	},
-	{
-		"path" : "pages/My/funtion/word_order",
-		"style" : 
+			"path": "pages/Guide/funtion/guide_detail",
+			"style": {
+				"navigationBarTitleText": "详情"
+			}
+		},
 		{
-			"navigationBarTitleText" : "工单管理",
-			"navigationBarBackgroundColor": "#007AFF",
-			"navigationBarTextStyle": "white"
-		}
-	},
-	{
-		"path" : "pages/My/funtion/word_order_detail",
-		"style" : 
+			"path": "pages/My/funtion/word_order",
+			"style": {
+				"navigationBarTitleText": "工单管理",
+				"navigationBarBackgroundColor": "#007AFF",
+				"navigationBarTextStyle": "white"
+			}
+		},
 		{
-			"navigationBarTitleText" : "工单详情",
-			"navigationBarBackgroundColor": "#007AFF",
-			"navigationBarTextStyle": "white"
-		}
-	},
-	{
-		"path" : "pages/Home/Component/ai_assistant",
-		"style" : 
+			"path": "pages/My/funtion/word_order_detail",
+			"style": {
+				"navigationBarTitleText": "工单详情",
+				"navigationBarBackgroundColor": "#007AFF",
+				"navigationBarTextStyle": "white"
+			}
+		},
 		{
-			"navigationStyle": "custom"
-		}
-	},
-	{
-		"path" : "pages/Home/Component/artificial",
-		"style" : 
+			"path": "pages/Home/Component/ai_assistant",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
 		{
-			"navigationStyle": "custom"
+			"path": "pages/Home/Component/artificial",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/My/funtion/health_record",
+			"style": {
+				"navigationBarTitleText": "健康档案"
+			}
+		},
+		{
+			"path": "pages/My/funtion/add_health_record",
+			"style": {
+				"navigationStyle": "custom"
+			}
 		}
-	}],
+	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "uni-app",
