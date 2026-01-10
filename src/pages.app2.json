@@ -122,13 +122,13 @@
 			}
 		},
 		{
-			"path": "pages/My/funtion/health_record",
+			"path": "pages/My/funtion/health_record/index",
 			"style": {
 				"navigationBarTitleText": "健康档案"
 			}
 		},
 		{
-			"path": "pages/My/funtion/add_health_record",
+			"path": "pages/My/funtion/health_record/add_health_record",
 			"style": {
 				"navigationStyle": "custom"
 			}
