@@ -1,6 +1,6 @@
 export const utilsConfig = {
 	wxCode: 'wx1c370ae905731889', // 微信小程序id-code
 	appid: 'wx1c370ae905731889', // 小程序appid
-	tenantId: '000000', // 租户ID
-	clientId: 'e5cd7e4891bf95d1d19206ce24a7b32e', // 客户端ID
+	tenantId: '333987', // 租户ID
+	clientId: '8fc9048a6bfbe1758f6071be53a6398a', // 客户端ID
 }

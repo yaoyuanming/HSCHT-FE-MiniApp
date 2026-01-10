@@ -98,15 +98,30 @@
 			}
 		},
 		{
-			"path": "pages/My/funtion/health_record",
+			"path": "pages/My/funtion/health_record/index",
 			"style": {
 				"navigationBarTitleText": "健康档案"
 			}
 		},
 		{
-			"path": "pages/My/funtion/add_health_record",
+			"path": "pages/My/funtion/health_record/add_health_record",
 			"style": {
 				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/My/funtion/health_record/health_record_detail",
+			"style" : 
+			{
+				"navigationStyle": "custom",
+				"navigationBarTitleText" : "健康档案详情"
+			}
+		},
+		{
+			"path" : "pages/My/funtion/company_profile/index",
+			"style" : 
+			{
+				"navigationBarTitleText" : "企业档案"
 			}
 		}
 	],

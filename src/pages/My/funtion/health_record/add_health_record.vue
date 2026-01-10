@@ -143,6 +143,8 @@
 </template>
 
 <script>
+	import { addHealthRecord, addUnderlyingMedicalCondition, getHealthRecordList } from '@/api/health_record.js'
+
 	export default {
 		data() {
 			return {
@@ -208,7 +210,7 @@
 					}
 				});
 			},
-			handleSave() {
+			async handleSave() {
 				// 简单校验
 				if (!this.formData.name) {
 					uni.showToast({ title: '请输入姓名', icon: 'none' });
@@ -219,15 +221,101 @@
 					return;
 				}
 				
-				// TODO: 调用API保存
 				uni.showLoading({ title: '保存中...' });
-				setTimeout(() => {
+				
+				try {
+					// 获取当前用户ID
+					const userId = uni.getStorageSync('userId');
+					if (!userId) {
+						uni.hideLoading();
+						uni.showToast({ title: '获取用户信息失败，请重新登录', icon: 'none' });
+						return;
+					}
+
+					// 1. 保存健康档案
+					const healthRecordParams = {
+						userId: userId,
+						name: this.formData.name,
+						// 接口要求: 0男, 1女。当前: '1'男, '2'女
+						sex: this.formData.gender === '1' ? '0' : '1',
+						age: this.formData.age ? parseInt(this.formData.age) : 0,
+						height: this.formData.height ? parseFloat(this.formData.height) : 0,
+						weight: this.formData.weight ? parseFloat(this.formData.weight) : 0,
+						// 注意：接口字段名为 bim，不是 bmi
+						bim: this.formData.bmi ? parseFloat(this.formData.bmi) : 0,
+						phone: this.formData.phone,
+						idCard: this.formData.idCard,
+						emergencyContact: this.formData.emergencyContact,
+						address: this.formData.address
+					};
+
+					console.log('addHealthRecord params:', healthRecordParams);
+					const res = await addHealthRecord(healthRecordParams);
+					console.log('addHealthRecord response:', res);
+					
+					let finalId = null;
+
+					// 尝试从响应中获取ID
+					if (res && (res.code === 200 || res.code === 0)) {
+						if (res.data) {
+							if (typeof res.data === 'object') {
+								finalId = res.data.id || res.data.healthRecordId || res.data.healthRecordsId;
+							} else {
+								finalId = res.data;
+							}
+						}
+						// 如果data里没找到，尝试直接从res获取
+						if (!finalId && res.id) finalId = res.id;
+					}
+
+					// 如果还是没有ID，尝试查询列表获取
+					if (!finalId) {
+						console.log('Response ID missing, trying to fetch list...');
+						try {
+							const listRes = await getHealthRecordList({ userId: userId });
+							console.log('getHealthRecordList response:', listRes);
+							if (listRes && listRes.rows && listRes.rows.length > 0) {
+								// 假设最新的在最前，或者根据创建时间/ID排序
+								// 这里简单取第一个，或者可以过滤
+								finalId = listRes.rows[0].id || listRes.rows[0].healthRecordsId;
+								console.log('Fetched ID from list:', finalId);
+							}
+						} catch (listErr) {
+							console.error('Failed to fetch health record list:', listErr);
+						}
+					}
+
+					if (!finalId) {
+						console.error('无法获取档案ID, response:', JSON.stringify(res));
+						throw new Error('保存档案成功但未返回ID，且无法查询到档案记录');
+					}
+
+					// 2. 保存基础病症
+					const diseasePromises = this.diseaseList
+						.filter(item => item.name && item.name.trim() !== '')
+						.map(item => {
+							return addUnderlyingMedicalCondition({
+								healthRecordsId: finalId,
+								symptomsName: item.name,
+								symptomsDescription: item.desc
+							});
+						});
+
+					if (diseasePromises.length > 0) {
+						await Promise.all(diseasePromises);
+					}
+
 					uni.hideLoading();
-					uni.showToast({ title: '保存成功' });
+					uni.showToast({ title: '保存成功', icon: 'success' });
 					setTimeout(() => {
 						uni.navigateBack();
 					}, 1500);
-				}, 1000);
+
+				} catch (error) {
+					console.error('保存失败:', error);
+					uni.hideLoading();
+					uni.showToast({ title: error.message || '保存失败', icon: 'none' });
+				}
 			}
 		}
 	}
