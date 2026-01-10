@@ -27,7 +27,7 @@ const clearLoginInfo = () => {
 
 // 构造登录参数
 const getLoginParams = (code) => ({
-    appid: utilsConfig.appid,
+    appId: utilsConfig.appid,
     xcxCode: code,
     code: code,
     tenantId: utilsConfig.tenantId,
