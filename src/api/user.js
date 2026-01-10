@@ -10,3 +10,21 @@ export const getUserProfile = () => request('get', '/system/user/profile')
 export const DecryptionMobilePhone = (data) => {
 	return request('post', 'auth/Wx/decryptPhoneNumber', data)
 }
+
+// 微信支付
+export const weixinPlay = (data) => request('post', '/billing/pay/wx/jsapi', data)
+
+// 获取用户余额信息
+export const getObtainUserBalance = (params) => {
+	return request('get', '/billing/balance/userAccountInfo/getOwnBalanceAccountInfo')
+}
+// 客户消费记录
+export const UserConsumptionRecord = (data) => {
+	return request('post', '/hospital/consumptionRecord/client', data)
+}
+
+
+// 用户余额支付
+export const UserBalancePayment = (data) => {
+	return request('post', '/billing/balance/userAccountInfo/balancePayment', data)
+}

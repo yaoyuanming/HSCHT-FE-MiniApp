@@ -2,6 +2,12 @@
   "name": "miniprogram-project",
   "version": "0.0.0",
   "scripts": {
+    "switch:app1": "node scripts/switch-app.cjs app1",
+    "switch:app2": "node scripts/switch-app.cjs app2",
+    "dev:mp-weixin:app1": "npm run switch:app1 && uni -p mp-weixin",
+    "dev:mp-weixin:app2": "npm run switch:app2 && uni -p mp-weixin",
+    "build:mp-weixin:app1": "npm run switch:app1 && uni build -p mp-weixin",
+    "build:mp-weixin:app2": "npm run switch:app2 && uni build -p mp-weixin",
     "dev:app": "uni -p app",
     "dev:app-android": "uni -p app-android",
     "dev:app-ios": "uni -p app-ios",

@@ -33,7 +33,7 @@ export const completeLoginFlow = async () => {
 
 		// 调用登录接口
 		const loginParams = {
-			appid: utilsConfig.appid,
+			appId: utilsConfig.appid,
 			xcxCode: loginResult,
 			code: loginResult,
 			tenantId: utilsConfig.tenantId,

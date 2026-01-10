@@ -1,12 +1,12 @@
 {
-  "name": "miniprogram-project-app2",
+  "name": "miniprogram-project-app1",
   "appid": "",
   "description": "",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
   "mp-weixin": {
-    "appid": "wxf9bc0c7d39552110",
+    "appid": "wx1c370ae905731889",
     "setting": {
       "urlCheck": false
     },
