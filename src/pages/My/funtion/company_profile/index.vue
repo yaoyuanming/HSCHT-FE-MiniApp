@@ -1,29 +1,39 @@
 <template>
 	<view class="container">
-		<!-- 空状态展示 -->
+		<!-- 加载状态 -->
+<!-- 		<view class="loading-state" v-if="isLoading">
+			<uni-load-more status="loading" content-text='{"loading":"正在查询档案..."}'></uni-load-more>
+		</view> -->
+
+		<!-- 空状态展示 (仅当不自动跳转时显示，或者作为兜底) -->
 		<view class="empty-state">
 			<view class="icon-box">
 				<image class="empty-icon" src="/static/my/加.png" mode="widthFix"></image>
 			</view>
-			<text class="empty-title">您还未创建健康档案</text>
-			<text class="empty-desc">完善健康档案有助于我们为您提供更精准的健康服务</text>
+			<text class="empty-title">您还未创建企业档案</text>
+			<text class="empty-desc">完善健康档案有助于我们为您提供更精准的企业服务</text>
 			
-			<button class="action-btn" @click="handleCreate">去填写健康档案</button>
+			<button class="action-btn" @click="handleCreate">去填写企业档案</button>
 		</view>
 	</view>
 </template>
 
 <script>
+	import { getHealthRecordList } from '@/api/health_record.js'
+
 	export default {
 		data() {
 			return {
-				
+				isLoading: true
 			}
+		},
+		onShow() {
+			this.checkHealthRecord();
 		},
 		methods: {
 			handleCreate() {
 				uni.navigateTo({
-					url: '/pages/My/funtion/add_health_record'
+					url: '/pages/My/funtion/health_record/add_health_record'
 				})
 			}
 		}

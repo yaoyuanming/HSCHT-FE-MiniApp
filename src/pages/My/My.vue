@@ -109,15 +109,18 @@
 					case 'consult':
 						// 跳转到人工咨询页面
 						uni.navigateTo({
-							url: '/pages/Home/Component/Artificial'
+							url: '/pages/Home/Component/ai_assistant'
 						})
 						break;
 					case 'company':
 						// TODO: 跳转企业档案
+						uni.navigateTo({
+							url:'/pages/My/funtion/company_profile/index'
+						})
 						break;
 					case 'health':
 						uni.navigateTo({
-							url: '/pages/My/funtion/health_record'
+							url: '/pages/My/funtion/health_record/index'
 						})
 						break;
 					case 'project':

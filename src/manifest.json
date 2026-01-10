@@ -8,7 +8,9 @@
   "mp-weixin": {
     "appid": "wxf9bc0c7d39552110",
     "setting": {
-      "urlCheck": false
+      "urlCheck": false,
+      "ignoreDevUnusedFiles": false,
+      "ignoreUploadUnusedFiles": false
     },
     "usingComponents": true,
     "mergeVirtualHostAttributes": true
