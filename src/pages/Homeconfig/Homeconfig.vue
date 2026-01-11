@@ -66,12 +66,39 @@ const skeletonLines = [1, 2, 3, 4]
 const store = useStore()
 const token = () => store.getters?.token
 
+const tabPages = new Set([
+	'pages/Homeconfig/Homeconfig',
+	'pages/project/index',
+	'pages/Curriculum/index',
+	'pages/My/My'
+])
+
+const normalizePagePath = (url = '') => {
+	if (!url) return ''
+	const cleaned = String(url).split('?')[0].split('#')[0]
+	return cleaned.startsWith('/') ? cleaned.slice(1) : cleaned
+}
+
+const navigateByUrl = (url) => {
+	const pagePath = normalizePagePath(url)
+	if (!pagePath) return
+
+	if (tabPages.has(pagePath)) {
+		uni.switchTab({
+			url: `/${pagePath}`
+		})
+		return
+	}
+
+	uni.navigateTo({
+		url
+	})
+}
+
 	// 页面方法
 	const goToDialogue = (rows) => {
 		if (rows.linkType == 1) {
-			uni.navigateTo({
-				url: rows.linkUrl
-			})
+			navigateByUrl(rows.linkUrl)
 		} else {
 			uni.openUrl({
 				url: rows.linkUrl
@@ -81,9 +108,7 @@ const token = () => store.getters?.token
 
 	const handelChange = (index) => {
 		if (swiper.value[index]?.linkType == 1) {
-			uni.navigateTo({
-				url: swiper.value[index]?.linkUrl
-			})
+			navigateByUrl(swiper.value[index]?.linkUrl)
 		} else {
 			uni.openUrl({
 				url: swiper.value[index]?.linkUrl
