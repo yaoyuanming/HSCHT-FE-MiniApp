@@ -28,3 +28,8 @@ export const UserConsumptionRecord = (data) => {
 export const UserBalancePayment = (data) => {
 	return request('post', '/billing/balance/userAccountInfo/balancePayment', data)
 }
+
+// 个人套餐退款
+export const UserProjectReuund = (data) => {
+	return request('post', '/hospital/consumptionRecord/client/refund', data)
+}

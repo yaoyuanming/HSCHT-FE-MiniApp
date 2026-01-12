@@ -9,7 +9,7 @@
 	},
 	"pages": [
 		{
-			"path": "pages/Homeconfig/Homeconfig",
+			"path": "pages/Home/Home",
 			"style": {
 				"navigationStyle": "custom"
 			}
@@ -36,30 +36,6 @@
 			"path": "pages/Course/detail",
 			"style": {
 				"navigationBarTitleText": "活动详情"
-			}
-		},
-		{
-			"path": "pages/project/index",
-			"style": {
-				"navigationBarTitleText": "项目"
-			}
-		},
-		{
-			"path": "pages/project/info",
-			"style": {
-				"navigationBarTitleText": "项目详情"
-			}
-		},
-		{
-			"path": "pages/Curriculum/index",
-			"style": {
-				"navigationBarTitleText": "课程"
-			}
-		},
-		{
-			"path": "pages/Curriculum/detail",
-			"style": {
-				"navigationBarTitleText": "课程详情"
 			}
 		},
 		{
@@ -134,18 +110,16 @@
 			}
 		},
 		{
-			"path" : "pages/My/funtion/health_record/health_record_detail",
-			"style" : 
-			{
+			"path": "pages/My/funtion/health_record/health_record_detail",
+			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText" : "健康档案详情"
+				"navigationBarTitleText": "健康档案详情"
 			}
 		},
 		{
-			"path" : "pages/My/funtion/company_profile/index",
-			"style" : 
-			{
-				"navigationBarTitleText" : "企业档案"
+			"path": "pages/My/funtion/company_profile/index",
+			"style": {
+				"navigationBarTitleText": "企业档案"
 			}
 		}
 	],
@@ -165,22 +139,28 @@
 		"backgroundColor": "#ffffff",
 		"list": [
 			{
-				"pagePath": "pages/Homeconfig/Homeconfig",
+				"pagePath": "pages/Home/Home",
 				"iconPath": "/static/nav/home.png",
 				"selectedIconPath": "/static/nav/home-active.png",
 				"text": "首页"
 			},
 			{
-				"pagePath": "pages/project/index",
+				"pagePath": "pages/Service/Service",
 				"iconPath": "/static/nav/service.png",
 				"selectedIconPath": "/static/nav/service-active.png",
-				"text": "项目"
+				"text": "服务"
 			},
 			{
-				"pagePath": "pages/Curriculum/index",
+				"pagePath": "pages/Course/Course",
 				"iconPath": "/static/nav/course.png",
 				"selectedIconPath": "/static/nav/course-active.png",
-				"text": "课程"
+				"text": "活动"
+			},
+			{
+				"pagePath": "pages/Guide/Guide",
+				"iconPath": "/static/nav/guide.png",
+				"selectedIconPath": "/static/nav/guide-active.png",
+				"text": "指南"
 			},
 			{
 				"pagePath": "pages/My/My",

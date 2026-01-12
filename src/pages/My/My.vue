@@ -58,10 +58,42 @@
 	import { mapGetters } from 'vuex'
 	import { completeLoginFlow } from '@/utils/auth'
 
+	// “我的服务”入口显示配置：按构建标识（app1/app2）控制显示哪些 key。
+	// 说明：key 必须与 allServiceList 中的 item.key 对应。
+	const myServiceAllowByAppKey = {
+		app1: ['health', 'company', 'gov', 'consult'],
+		app2: ['project', 'course']
+	}
+
+	// 获取“我的服务”允许显示的 key 列表。
+	const getMyServiceAllowKeys = () => {
+		const raw = import.meta.env.VITE_MY_SERVICE_KEYS
+		if (raw === null || raw === undefined) {
+			const appKeyRaw = import.meta.env.VITE_APP_KEY
+			const appKey = appKeyRaw === null || appKeyRaw === undefined ? '' : String(appKeyRaw).trim().replace(/^['"]|['"]$/g, '')
+			return myServiceAllowByAppKey[appKey] || null
+		}
+
+		const str = String(raw).trim().replace(/^['"]|['"]$/g, '')
+		if (!str) {
+			const appKeyRaw = import.meta.env.VITE_APP_KEY
+			const appKey = appKeyRaw === null || appKeyRaw === undefined ? '' : String(appKeyRaw).trim().replace(/^['"]|['"]$/g, '')
+			return myServiceAllowByAppKey[appKey] || null
+		}
+		const keys = str
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+		if (keys.length) return keys
+		const appKeyRaw = import.meta.env.VITE_APP_KEY
+		const appKey = appKeyRaw === null || appKeyRaw === undefined ? '' : String(appKeyRaw).trim().replace(/^['"]|['"]$/g, '')
+		return myServiceAllowByAppKey[appKey] || null
+	}
+
 	export default {
 		data() {
 			return {
-				serviceList: [
+				allServiceList: [
 					{ name: '健康档案', icon: '/static/my/健康档案.png', key: 'health' },
 					{ name: '企业档案', icon: '/static/my/企业档案.png', key: 'company' },
 					{ name: '工单管理', icon: '/static/my/工单管理.png', key: 'gov' },
@@ -73,6 +105,11 @@
 		},
 		computed: {
 			...mapGetters(['userInfo', 'token']),
+			serviceList() {
+				const allowKeys = getMyServiceAllowKeys?.()
+				if (!Array.isArray(allowKeys)) return this.allServiceList
+				return this.allServiceList.filter((item) => allowKeys.includes(item.key))
+			},
 			userName() {
 				if (!this.token) return '未登录'
 				return this.userInfo.user?.nickName || this.userInfo.nickName || '用户'
@@ -124,10 +161,14 @@
 						})
 						break;
 					case 'project':
-						// TODO: 跳转我的项目
+						uni.navigateTo({
+							url: '/pages/My/my_service/project/index'
+						})
 						break;
 					case 'course':
-						// TODO: 跳转我的课程
+						uni.navigateTo({
+							url: '/pages/My/my_service/course/index'
+						})
 						break;
 					default:
 						// uni.showToast({ title: '功能开发中', icon: 'none' })

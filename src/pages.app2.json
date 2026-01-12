@@ -11,7 +11,7 @@
 		{
 			"path": "pages/Homeconfig/Homeconfig",
 			"style": {
-				"navigationStyle": "custom"
+				"navigationBarTitleText": "首页"
 			}
 		},
 		{
@@ -131,6 +131,18 @@
 			"path": "pages/My/funtion/health_record/add_health_record",
 			"style": {
 				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/My/my_service/project/index",
+			"style": {
+				"navigationBarTitleText": "我的项目"
+			}
+		},
+		{
+			"path": "pages/My/my_service/course/index",
+			"style": {
+				"navigationBarTitleText": "我的课程"
 			}
 		}
 	],
