@@ -14,10 +14,14 @@ export const DecryptionMobilePhone = (data) => {
 // 微信支付
 export const weixinPlay = (data) => request('post', '/billing/pay/wx/jsapi', data)
 
+// 用户充值
+export const userPlayMoney = (data) => request('post', '/billing/balance/userBalanceTransaction/recharge', data)
+
 // 获取用户余额信息
 export const getObtainUserBalance = (params) => {
 	return request('get', '/billing/balance/userAccountInfo/getOwnBalanceAccountInfo')
 }
+
 // 客户消费记录
 export const UserConsumptionRecord = (data) => {
 	return request('post', '/hospital/consumptionRecord/client', data)

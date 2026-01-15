@@ -20,9 +20,9 @@
 					<image class="asset-icon" src="/static/my/我的余额.png" mode="aspectFit"></image>
 				</view>
 				<text class="asset-label">我的余额</text>
-				<text class="asset-value">¥1,234.56</text>
+				<text class="asset-value">¥{{ balanceAmount }}</text>
 			</view>
-			<view class="asset-item" v-if="false" @click="onNavClick('coupon')">
+			<view class="asset-item" @click="onNavClick('coupon')">
 				<view class="icon-box">
 					<image class="asset-icon" src="/static/my/优惠卷.png" mode="aspectFit"></image>
 				</view>
@@ -57,6 +57,7 @@
 <script>
 	import { mapGetters } from 'vuex'
 	import { completeLoginFlow } from '@/utils/auth'
+	import { getObtainUserBalance } from '@/api/user.js'
 
 	// “我的服务”入口显示配置：按构建标识（app1/app2）控制显示哪些 key。
 	// 说明：key 必须与 allServiceList 中的 item.key 对应。
@@ -93,6 +94,7 @@
 	export default {
 		data() {
 			return {
+				balanceAmount: '0.00',
 				allServiceList: [
 					{ name: '健康档案', icon: '/static/my/健康档案.png', key: 'health' },
 					{ name: '企业档案', icon: '/static/my/企业档案.png', key: 'company' },
@@ -124,6 +126,31 @@
 			}
 		},
 		methods: {
+			formatMoney(value) {
+				const num = Number(value)
+				if (!Number.isFinite(num)) return '0.00'
+				return num.toLocaleString('en-US', {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2
+				})
+			},
+			async refreshBalance() {
+				if (!this.token) {
+					this.balanceAmount = '0.00'
+					return
+				}
+				try {
+					const res = await getObtainUserBalance()
+					if (res && res.code === 200) {
+						const cents = Number(res.data?.availableBalance || 0)
+						this.balanceAmount = this.formatMoney(cents / 100)
+						return
+					}
+					this.balanceAmount = '0.00'
+				} catch (e) {
+					this.balanceAmount = '0.00'
+				}
+			},
 			async handleLogin() {
 				// 无论是否有token，点击都尝试登录（可能是重新登录或token失效但未清理）
 				uni.showLoading({ title: '登录中...' })
@@ -131,6 +158,7 @@
 				uni.hideLoading()
 				if (success) {
 					uni.showToast({ title: '登录成功', icon: 'success' })
+					this.refreshBalance()
 				} else {
 					uni.showToast({ title: '登录失败', icon: 'none' })
 				}
@@ -144,9 +172,7 @@
 						})
 						break;
 					case 'coupon':
-						uni.navigateTo({
-							url: '/pages/My/asset/coupon/index'
-						})
+						uni.showToast({ title: '暂未开放', icon: 'none' })
 						break;
 					case 'wallet':
 						uni.navigateTo({
@@ -190,6 +216,9 @@
 						break;
 				}
 			}
+		},
+		onShow() {
+			this.refreshBalance()
 		}
 	}
 </script>

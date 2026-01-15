@@ -154,7 +154,9 @@
 		{
 			"path": "pages/My/asset/wallet/index",
 			"style": {
-				"navigationBarTitleText": "我的钱包"
+				"navigationBarTitleText": "我的钱包",
+				"navigationBarBackgroundColor": "#1E88FF",
+				"navigationBarTextStyle": "white"
 			}
 		}
 	],
