@@ -91,10 +91,11 @@
 				</view>
 				<view 
 					class="send-btn" 
-					:class="{ 'disabled': !inputText.trim() || isStreaming }"
-					@click="sendMessage"
+					:class="{ 'disabled': !isStreaming && !inputText.trim() }"
+					@click="handleSendOrStop"
 				>
-					<uni-icons type="paperplane-filled" size="20" color="#fff"></uni-icons>
+					<uni-icons v-if="isStreaming" type="circle-filled" size="20" color="#fff"></uni-icons>
+					<uni-icons v-else type="paperplane-filled" size="20" color="#fff"></uni-icons>
 				</view>
 			</view>
 		</view>
@@ -126,10 +127,14 @@
 	const messages = ref([]);
 	const scrollTop = ref(0);
 	const isStreaming = ref(false);
+	const isResponseComplete = ref(false);
 
 	const queryOptions = ref({});
 	const sessionId = ref('');
 	const currentTask = ref(null); // 当前请求任务
+	const activeRequestId = ref(0);
+
+	const systemPrompt = '你是一名专业的出海投资分析师，专门提供海外投资分析，市场调研，风险评估等专业服务。对标全懂出海-首页-出海分析师特性。';
 	
 	// 当前选中的模型提供方和模型ID
 	const currentProvider = ref('');
@@ -140,18 +145,73 @@
 	const isTyping = ref(false);
 	let typingTimer = null;
 
+	const checkAndUnlock = () => {
+		if (isResponseComplete.value && typingQueue.value.length === 0) {
+			isStreaming.value = false;
+			currentTask.value = null;
+			
+			// 确保最后一条消息的loading状态结束
+			if (messages.value.length > 0) {
+				const lastMsg = messages.value[messages.value.length - 1];
+				if (lastMsg.role === 'assistant') {
+					lastMsg.isLoading = false;
+				}
+			}
+		}
+	};
+
+	const handleResponseComplete = () => {
+		isResponseComplete.value = true;
+		
+		// 检查是否可以直接解锁
+		checkAndUnlock();
+		
+		// 兜底机制：如果打字机队列还在运行，设置一个强制结束的定时器
+		// 防止因为某些未知的逻辑错误导致输入框一直无法解锁
+		// 3秒后如果还没解锁，强制解锁
+		setTimeout(() => {
+			if (isStreaming.value) {
+				// 如果队列里还有很多字，直接全部上屏
+				if (typingQueue.value.length > 0) {
+					const remaining = typingQueue.value.join('');
+					const lastMsgIndex = messages.value.length - 1;
+					if (messages.value[lastMsgIndex]) {
+						messages.value[lastMsgIndex].content += remaining;
+					}
+					typingQueue.value = [];
+				}
+				
+				// 强制停止
+				stopCurrentTask();
+			}
+		}, 3000);
+	};
+
 	const processTypingQueue = (msgIndex) => {
 		if (typingQueue.value.length === 0) {
 			isTyping.value = false;
+			checkAndUnlock();
+			return;
+		}
+
+		// 保护机制：如果 msgIndex 越界（例如用户清空了会话），停止处理
+		if (!messages.value[msgIndex]) {
+			typingQueue.value = [];
+			isTyping.value = false;
+			checkAndUnlock();
 			return;
 		}
 
 		isTyping.value = true;
-		const char = typingQueue.value.shift();
-		
-		if (messages.value[msgIndex]) {
+		try {
+			const char = typingQueue.value.shift();
 			messages.value[msgIndex].content += char;
 			scrollToBottom();
+		} catch (e) {
+			console.error('Typing error:', e);
+			typingQueue.value = [];
+			checkAndUnlock();
+			return;
 		}
 
 		// 动态调整速度，避免队列堆积过长
@@ -345,7 +405,8 @@
 		try {
 			const res = await createSession({
 				name: '智能咨询',
-				isTemporary: 1
+				isTemporary: 1,
+				systemPrompt
 			});
 			if (res && res.code === 200 && res.data) {
 				const newId = res.data.id || res.data.sessionId || res.data;
@@ -371,6 +432,8 @@
 	};
 	
 	const stopCurrentTask = () => {
+		activeRequestId.value += 1;
+
 		// 清理打字机队列
 		typingQueue.value = [];
 		if (typingTimer) {
@@ -385,12 +448,37 @@
 			} catch (e) {}
 			currentTask.value = null;
 		}
+		
+		// 强制解锁
 		isStreaming.value = false;
+		isResponseComplete.value = true;
+		
+		// 确保最后一条消息的loading状态结束
+		if (messages.value.length > 0) {
+			const lastMsg = messages.value[messages.value.length - 1];
+			if (lastMsg.role === 'assistant') {
+				lastMsg.isLoading = false;
+			}
+		}
+	};
+	
+	const handleSendOrStop = () => {
+		if (isStreaming.value) {
+			// 如果正在流式传输，点击则停止
+			stopCurrentTask();
+		} else {
+			// 否则发送消息
+			sendMessage();
+		}
 	};
 
 	const sendMessage = async () => {
 		if (isStreaming.value || !inputText.value.trim()) return;
 		
+		const requestId = activeRequestId.value + 1;
+		activeRequestId.value = requestId;
+
+		isResponseComplete.value = false;
 		const query = inputText.value.trim();
 		inputText.value = '';
 		
@@ -426,17 +514,22 @@
 					query: query,
 					conversation_id: sessionId.value,
 					provider: currentProvider.value,
-					model: currentModelId.value
+					model: currentModelId.value,
+					systemPrompt
 				},
 				// onChunk
 				(data) => {
+					if (requestId !== activeRequestId.value) return;
+
 					// console.log('Stream Chunk:', data);
 					assistantMsg.isLoading = false;
 					
 					// 检查是否为完成事件
 					if (data.event === 'complete' || data.status === 'COMPLETED' || (data.event === 'message' && data.data && data.data.status === 'COMPLETED')) {
 						// console.log('收到完成事件，结束流');
-						// 等待打字机队列处理完再停止
+						handleResponseComplete();
+						
+						// 如果队列为空，直接停止任务清理资源
 						if (typingQueue.value.length === 0) {
 							stopCurrentTask();
 						}
@@ -454,8 +547,14 @@
 						newContent = data.data;
 					}
 					
+					// 检查 [DONE] 标记
+					if (newContent === '[DONE]' || (typeof newContent === 'string' && newContent.includes('[DONE]'))) {
+						handleResponseComplete();
+						return;
+					}
+					
 					// 过滤特殊标记
-					if (newContent && newContent !== '[DONE]' && newContent !== '...' && !newContent.includes('[DONE]')) {
+					if (newContent && newContent !== '...') {
 						// assistantMsg.content += newContent;
 						// 使用打字机效果
 						const chars = newContent.split('');
@@ -469,16 +568,15 @@
 				},
 				// onComplete
 				() => {
+					if (requestId !== activeRequestId.value) return;
+
 					// console.log('回答完成');
-					// 只有当队列为空时才真正结束状态，否则让打字机跑完
-					if (typingQueue.value.length === 0) {
-						isStreaming.value = false;
-						currentTask.value = null;
-						assistantMsg.isLoading = false;
-					}
+					handleResponseComplete();
 				},
 				// onError
 				(err) => {
+					if (requestId !== activeRequestId.value) return;
+
 					console.error('流式响应错误:', err);
 					isStreaming.value = false;
 					currentTask.value = null;
@@ -498,6 +596,9 @@
 	};
 	
 	const regenerateAnswer = async (index) => {
+		const requestId = activeRequestId.value + 1;
+		activeRequestId.value = requestId;
+
 		// 找到上一条用户消息
 		let lastUserMsg = null;
 		for (let i = index - 1; i >= 0; i--) {
@@ -508,6 +609,8 @@
 		}
 		
 		if (lastUserMsg) {
+			isResponseComplete.value = false;
+
 			// 清空当前助手回复并重新发送
 			messages.value[index].content = '';
 			messages.value[index].isLoading = true;
@@ -520,9 +623,12 @@
 						query: lastUserMsg.content,
 						conversation_id: sessionId.value,
 						provider: currentProvider.value,
-						model: currentModelId.value
+						model: currentModelId.value,
+						systemPrompt
 					},
 					(data) => {
+						if (requestId !== activeRequestId.value) return;
+
 						messages.value[index].isLoading = false;
 						
 						// 检查是否为完成事件
@@ -557,6 +663,8 @@
 						// scrollToBottom();
 					},
 					() => {
+						if (requestId !== activeRequestId.value) return;
+
 						if (typingQueue.value.length === 0) {
 							isStreaming.value = false;
 							currentTask.value = null;
@@ -564,6 +672,8 @@
 						}
 					},
 					(err) => {
+						if (requestId !== activeRequestId.value) return;
+
 						isStreaming.value = false;
 						messages.value[index].isLoading = false;
 						if (!messages.value[index].content) {

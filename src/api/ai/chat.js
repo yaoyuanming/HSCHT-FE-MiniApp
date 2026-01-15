@@ -149,6 +149,7 @@ export const sendAIChatStreaming = (data, onChunk, onComplete, onError) => {
             sessionId: data.conversation_id || data.sessionId || '',
             provider: data.provider,
             model: data.model,
+            systemPrompt: data.systemPrompt,
             stream: true
         },
         enableChunked: true, // 开启流式传输

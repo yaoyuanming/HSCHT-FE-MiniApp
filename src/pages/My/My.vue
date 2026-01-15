@@ -61,8 +61,8 @@
 	// “我的服务”入口显示配置：按构建标识（app1/app2）控制显示哪些 key。
 	// 说明：key 必须与 allServiceList 中的 item.key 对应。
 	const myServiceAllowByAppKey = {
-		app1: ['health', 'company', 'gov', 'consult'],
-		app2: ['project', 'course']
+		app1: ['company', 'gov', 'consult'],
+		app2: ['project', 'course','health']
 	}
 
 	// 获取“我的服务”允许显示的 key 列表。
