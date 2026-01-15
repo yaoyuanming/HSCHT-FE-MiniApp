@@ -21,7 +21,7 @@
 					<view class="bill-tag">本月</view>
 				</view>
 
-				<view class="bill-list">
+				<view v-if="billPreviewList.length" class="bill-list">
 					<view class="bill-item" v-for="(item, idx) in billPreviewList" :key="idx">
 						<view class="bill-left">
 							<view class="bill-icon" :class="item.iconClass">
@@ -38,8 +38,11 @@
 						<view class="bill-amount" :class="item.amountClass">{{ item.consumptionAmount }}</view>
 					</view>
 				</view>
+				<view v-else class="bill-list">
+					<view class="bill-empty">无消费记录</view>
+				</view>
 
-				<view class="bill-more" @click="onViewMore">查看更多消费记录</view>
+				<view v-if="billList.length > 7" class="bill-more" @click="onViewMore">查看更多消费记录</view>
 			</view>
 		</view>
 
@@ -590,6 +593,15 @@
 		margin-top: auto;
 		padding-top: 10rpx;
 		margin-bottom: 10rpx;
+	}
+
+	.bill-empty {
+		height: 520rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #9aa0a6;
+		font-size: 26rpx;
 	}
 
 	.bill-popup {

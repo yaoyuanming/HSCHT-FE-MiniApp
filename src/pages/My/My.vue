@@ -54,8 +54,10 @@
 	</view>
 </template>
 
-<script>
-	import { mapGetters } from 'vuex'
+<script setup>
+	import { ref, computed } from 'vue'
+	import { onShow } from '@dcloudio/uni-app'
+	import { useStore } from 'vuex'
 	import { completeLoginFlow } from '@/utils/auth'
 	import { getObtainUserBalance } from '@/api/user.js'
 
@@ -91,136 +93,138 @@
 		return myServiceAllowByAppKey[appKey] || null
 	}
 
-	export default {
-		data() {
-			return {
-				balanceAmount: '0.00',
-				allServiceList: [
-					{ name: '健康档案', icon: '/static/my/健康档案.png', key: 'health' },
-					{ name: '企业档案', icon: '/static/my/企业档案.png', key: 'company' },
-					{ name: '工单管理', icon: '/static/my/工单管理.png', key: 'gov' },
-					{ name: '服务咨询', icon: '/static/my/服务咨询.png', key: 'consult' },
-					{ name: '我的项目', icon: '/static/my/我的项目.png', key: 'project' },
-					{ name: '我的课程', icon: '/static/my/我的课程.png', key: 'course' }
-				]
+	const store = useStore()
+	const token = computed(() => store.getters.token)
+	const userInfo = computed(() => store.getters.userInfo)
+
+	const balanceAmount = ref('0.00')
+	const allServiceList = ref([
+		{ name: '健康档案', icon: '/static/my/健康档案.png', key: 'health' },
+		{ name: '企业档案', icon: '/static/my/企业档案.png', key: 'company' },
+		{ name: '工单管理', icon: '/static/my/工单管理.png', key: 'gov' },
+		{ name: '服务咨询', icon: '/static/my/服务咨询.png', key: 'consult' },
+		{ name: '我的项目', icon: '/static/my/我的项目.png', key: 'project' },
+		{ name: '我的课程', icon: '/static/my/我的课程.png', key: 'course' }
+	])
+
+	const serviceList = computed(() => {
+		const allowKeys = getMyServiceAllowKeys?.()
+		if (!Array.isArray(allowKeys)) return allServiceList.value
+		return allServiceList.value.filter((item) => allowKeys.includes(item.key))
+	})
+
+	const userName = computed(() => {
+		if (!token.value) return '未登录'
+		return userInfo.value.user?.nickName || userInfo.value.nickName || '用户'
+	})
+
+	const userPhone = computed(() => {
+		if (!token.value) return null
+		// 获取电话号码，要求全部显示
+		return userInfo.value.user?.phonenumber || userInfo.value.phonenumber || null
+	})
+
+	const userAvatar = computed(() => {
+		return userInfo.value.user?.avatar || userInfo.value.avatar || '/static/logo.png' // 默认头像
+	})
+
+	const formatMoney = (value) => {
+		const num = Number(value)
+		if (!Number.isFinite(num)) return '0.00'
+		return num.toLocaleString('en-US', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		})
+	}
+
+	const refreshBalance = async () => {
+		if (!token.value) {
+			balanceAmount.value = '0.00'
+			return
+		}
+		try {
+			const res = await getObtainUserBalance()
+			if (res && res.code === 200) {
+				const cents = Number(res.data?.availableBalance || 0)
+				balanceAmount.value = formatMoney(cents / 100)
+				return
 			}
-		},
-		computed: {
-			...mapGetters(['userInfo', 'token']),
-			serviceList() {
-				const allowKeys = getMyServiceAllowKeys?.()
-				if (!Array.isArray(allowKeys)) return this.allServiceList
-				return this.allServiceList.filter((item) => allowKeys.includes(item.key))
-			},
-			userName() {
-				if (!this.token) return '未登录'
-				return this.userInfo.user?.nickName || this.userInfo.nickName || '用户'
-			},
-			userPhone() {
-				if (!this.token) return null
-				// 获取电话号码，要求全部显示
-				return this.userInfo.user?.phonenumber || this.userInfo.phonenumber || null
-			},
-			userAvatar() {
-				return this.userInfo.user?.avatar || this.userInfo.avatar || '/static/logo.png' // 默认头像
-			}
-		},
-		methods: {
-			formatMoney(value) {
-				const num = Number(value)
-				if (!Number.isFinite(num)) return '0.00'
-				return num.toLocaleString('en-US', {
-					minimumFractionDigits: 2,
-					maximumFractionDigits: 2
-				})
-			},
-			async refreshBalance() {
-				if (!this.token) {
-					this.balanceAmount = '0.00'
-					return
-				}
-				try {
-					const res = await getObtainUserBalance()
-					if (res && res.code === 200) {
-						const cents = Number(res.data?.availableBalance || 0)
-						this.balanceAmount = this.formatMoney(cents / 100)
-						return
-					}
-					this.balanceAmount = '0.00'
-				} catch (e) {
-					this.balanceAmount = '0.00'
-				}
-			},
-			async handleLogin() {
-				// 无论是否有token，点击都尝试登录（可能是重新登录或token失效但未清理）
-				uni.showLoading({ title: '登录中...' })
-				const success = await completeLoginFlow()
-				uni.hideLoading()
-				if (success) {
-					uni.showToast({ title: '登录成功', icon: 'success' })
-					this.refreshBalance()
-				} else {
-					uni.showToast({ title: '登录失败', icon: 'none' })
-				}
-			},
-			onNavClick(type) {
-				console.log('Clicked navigation:', type);
-				switch(type) {
-					case 'balance':
-						uni.navigateTo({
-							url: '/pages/My/asset/wallet/index'
-						})
-						break;
-					case 'coupon':
-						uni.showToast({ title: '暂未开放', icon: 'none' })
-						break;
-					case 'wallet':
-						uni.navigateTo({
-							url: '/pages/My/asset/wallet/index'
-						})
-						break;
-					case 'gov':
-						uni.navigateTo({
-							url: '/pages/My/funtion/word_order'
-						})
-						break;
-					case 'consult':
-						// 跳转到人工咨询页面
-						uni.navigateTo({
-							url: '/pages/Home/Component/ai_assistant'
-						})
-						break;
-					case 'company':
-						// TODO: 跳转企业档案
-						uni.navigateTo({
-							url:'/pages/My/funtion/company_profile/index'
-						})
-						break;
-					case 'health':
-						uni.navigateTo({
-							url: '/pages/My/funtion/health_record/index'
-						})
-						break;
-					case 'project':
-						uni.navigateTo({
-							url: '/pages/My/my_service/project/index'
-						})
-						break;
-					case 'course':
-						uni.navigateTo({
-							url: '/pages/My/my_service/course/index'
-						})
-						break;
-					default:
-						// uni.showToast({ title: '功能开发中', icon: 'none' })
-						break;
-				}
-			}
-		},
-		onShow() {
-			this.refreshBalance()
+			balanceAmount.value = '0.00'
+		} catch (e) {
+			balanceAmount.value = '0.00'
 		}
 	}
+
+	const handleLogin = async () => {
+		// 无论是否有token，点击都尝试登录（可能是重新登录或token失效但未清理）
+		uni.showLoading({ title: '登录中...' })
+		const success = await completeLoginFlow()
+		uni.hideLoading()
+		if (success) {
+			uni.showToast({ title: '登录成功', icon: 'success' })
+			refreshBalance()
+		} else {
+			uni.showToast({ title: '登录失败', icon: 'none' })
+		}
+	}
+
+	const onNavClick = (type) => {
+		console.log('Clicked navigation:', type);
+		switch(type) {
+			case 'balance':
+				uni.navigateTo({
+					url: '/pages/My/asset/wallet/index'
+				})
+				break;
+			case 'coupon':
+				uni.showToast({ title: '暂未开放', icon: 'none' })
+				break;
+			case 'wallet':
+				uni.navigateTo({
+					url: '/pages/My/asset/wallet/index'
+				})
+				break;
+			case 'gov':
+				uni.navigateTo({
+					url: '/pages/My/funtion/word_order'
+				})
+				break;
+			case 'consult':
+				// 跳转到人工咨询页面
+				uni.navigateTo({
+					url: '/pages/Home/Component/ai_assistant'
+				})
+				break;
+			case 'company':
+				// TODO: 跳转企业档案
+				uni.navigateTo({
+					url:'/pages/My/funtion/company_profile/index'
+				})
+				break;
+			case 'health':
+				uni.navigateTo({
+					url: '/pages/My/funtion/health_record/index'
+				})
+				break;
+			case 'project':
+				uni.navigateTo({
+					url: '/pages/My/my_service/project/index'
+				})
+				break;
+			case 'course':
+				uni.navigateTo({
+					url: '/pages/My/my_service/course/index'
+				})
+				break;
+			default:
+				// uni.showToast({ title: '功能开发中', icon: 'none' })
+				break;
+		}
+	}
+
+	onShow(() => {
+		refreshBalance()
+	})
 </script>
 
 <style lang="scss" scoped>
