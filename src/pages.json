@@ -121,6 +121,18 @@
 			"style": {
 				"navigationBarTitleText": "企业档案"
 			}
+		},
+		{
+			"path": "pages/My/asset/coupon/index",
+			"style": {
+				"navigationBarTitleText": "优惠券"
+			}
+		},
+		{
+			"path": "pages/My/asset/wallet/index",
+			"style": {
+				"navigationBarTitleText": "我的钱包"
+			}
 		}
 	],
 	"globalStyle": {

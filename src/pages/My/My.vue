@@ -22,7 +22,7 @@
 				<text class="asset-label">我的余额</text>
 				<text class="asset-value">¥1,234.56</text>
 			</view>
-			<view class="asset-item" @click="onNavClick('coupon')">
+			<view class="asset-item" v-if="false" @click="onNavClick('coupon')">
 				<view class="icon-box">
 					<image class="asset-icon" src="/static/my/优惠卷.png" mode="aspectFit"></image>
 				</view>
@@ -138,6 +138,21 @@
 			onNavClick(type) {
 				console.log('Clicked navigation:', type);
 				switch(type) {
+					case 'balance':
+						uni.navigateTo({
+							url: '/pages/My/asset/wallet/index'
+						})
+						break;
+					case 'coupon':
+						uni.navigateTo({
+							url: '/pages/My/asset/coupon/index'
+						})
+						break;
+					case 'wallet':
+						uni.navigateTo({
+							url: '/pages/My/asset/wallet/index'
+						})
+						break;
 					case 'gov':
 						uni.navigateTo({
 							url: '/pages/My/funtion/word_order'
